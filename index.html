@@ -428,7 +428,9 @@
       <select id="fCat">
         <option value="streaming">Streaming</option>
         <option value="software">Software</option>
-        <option value="bill">Bill (energy, broadband, insurance, phone)</option>
+        <option value="electricity">Electricity</option>
+        <option value="gas">Gas</option>
+        <option value="bill">Bill (broadband, insurance, phone)</option>
         <option value="other">Other</option>
       </select>
     </div>
@@ -578,7 +580,7 @@
     } else {
       items = items.filter(function(s){return s.status!=="cancelled";});
       if(filter==="trial") items = items.filter(function(s){return s.trial;});
-      if(filter==="bill") items = items.filter(function(s){return s.cat==="bill";});
+      if(filter==="bill") items = items.filter(function(s){return s.cat==="bill"||s.cat==="electricity"||s.cat==="gas";});
     }
     items.sort(function(a,b){
       var da = a.trial ? daysUntil(a.trialEnd) : daysUntil(a.date);
@@ -636,6 +638,12 @@
   // where the official color is black/near-black and would vanish on the dark tile.
   // Disney+ is deliberately absent: simple-icons has no icon for it (maintainers
   // declined to add one), so it correctly falls through to the letter tile.
+  // ---- Custom logos (brands not on Simple Icons; inlined so they need no hosting) ----
+  var YUNO_LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMzNEQ4QzYiLz48c3RvcCBvZmZzZXQ9IjAuNTUiIHN0b3AtY29sb3I9IiM0QkE2RTgiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM2RTY2RTkiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0idXJsKCNnKSIvPjxwYXRoIGQ9Ik0zMyAzMyBMNTAgNjEiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxMSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTY3IDMzIEw0MSA4NSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjExIiBzdHJva2UtbGluZWNhcD0icm91bmQiIGZpbGw9Im5vbmUiLz48L3N2Zz4K";
+  var CUSTOM_LOGOS = {
+    yuno:YUNO_LOGO, yunoenergy:YUNO_LOGO, yunoelectricity:YUNO_LOGO, yunogas:YUNO_LOGO
+  };
+
   var BRANDS = {
     netflix:{slug:"netflix"},
     spotify:{slug:"spotify"},
@@ -661,11 +669,32 @@
     slack:{slug:"slack"}
   };
 
+  // Try the full name first, then the first word (so "Yuno Electricity" still matches "yuno").
+  function brandKeys(name){
+    var full = norm(name);
+    var first = norm((name||"").trim().split(/\s+/)[0]);
+    return (first && first!==full) ? [full, first] : [full];
+  }
+  function customLogo(name){
+    var keys = brandKeys(name);
+    for(var i=0;i<keys.length;i++){ if(CUSTOM_LOGOS[keys[i]]) return CUSTOM_LOGOS[keys[i]]; }
+    return null;
+  }
+  function brandFor(name){
+    var keys = brandKeys(name);
+    for(var i=0;i<keys.length;i++){ if(BRANDS[keys[i]]) return BRANDS[keys[i]]; }
+    return {};
+  }
   function iconHTML(s){
-    var b = BRANDS[norm(s.name)] || {};
+    var letter = esc(((s.name||"?").trim().charAt(0) || "?").toUpperCase());
+    var custom = customLogo(s.name);
+    if(custom){
+      return '<div class="icon"><img class="logo" alt="" src="'+custom+'" onerror="logoFail(this)"/>'+
+        '<span class="fallback">'+letter+'</span></div>';
+    }
+    var b = brandFor(s.name);
     var slug = b.slug || norm(s.name);
     var color = b.color || null;
-    var letter = esc(((s.name||"?").trim().charAt(0) || "?").toUpperCase());
     if(!slug){
       return '<div class="icon"><span class="fallback" style="display:flex">'+letter+'</span></div>';
     }
@@ -839,10 +868,14 @@
     tile.innerHTML = iconHTMLraw(tile.getAttribute("data-ob"));
   });
   function iconHTMLraw(name){
-    var b = BRANDS[norm(name)] || {};
+    var letter = esc(((name||"?").trim().charAt(0) || "?").toUpperCase());
+    var custom = customLogo(name);
+    if(custom){
+      return '<img class="logo" alt="" src="'+custom+'" onerror="logoFail(this)"/><span class="fallback">'+letter+'</span>';
+    }
+    var b = brandFor(name);
     var slug = b.slug || norm(name);
     var color = b.color || null;
-    var letter = esc(((name||"?").trim().charAt(0) || "?").toUpperCase());
     var url = "https://cdn.simpleicons.org/"+slug+(color?"/"+color:"");
     return '<img class="logo" alt="" src="'+url+'" onerror="logoFail(this)"/><span class="fallback">'+letter+'</span>';
   }
