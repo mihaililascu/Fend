@@ -238,11 +238,9 @@
     border-radius:12px;margin-bottom:14px;display:none}
 
   /* Onboarding hero */
-  #onboardingView{position:fixed;inset:0;z-index:50;background:var(--bg);
-    display:flex;flex-direction:column;overflow:hidden;
-    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-  .ob-collage{position:relative;flex:0 0 48vh;min-height:260px}
-  .ob-tile{position:absolute;width:64px;height:64px;border-radius:18px;background:var(--surface);
+  #onboardingView{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:hidden}
+  .ob-field{position:absolute;inset:0}
+  .ob-tile{position:absolute;width:60px;height:60px;border-radius:16px;background:var(--surface);
     border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
     box-shadow:0 10px 24px rgba(0,0,0,.35);
     animation:obFloat 6s ease-in-out infinite;will-change:translate}
@@ -253,10 +251,12 @@
   .ob-tile:nth-child(5n+5){animation-duration:6.8s;animation-delay:-1s}
   @keyframes obFloat{0%,100%{translate:0 0}50%{translate:0 -12px}}
   @media (prefers-reduced-motion:reduce){.ob-tile{animation:none}}
-  .ob-tile img.logo{width:32px;height:32px;object-fit:contain}
-  .ob-tile .fallback{display:none;font-size:24px;font-weight:800;color:#fff}
-  .ob-content{flex:1;display:flex;flex-direction:column;justify-content:flex-end;
-    padding:0 24px calc(36px + env(safe-area-inset-bottom))}
+  .ob-tile img.logo{width:34px;height:34px;object-fit:contain;border-radius:7px}
+  .ob-tile .fallback{display:none;font-size:22px;font-weight:800;color:#fff}
+  .ob-scrim{position:absolute;left:0;right:0;bottom:0;top:0;z-index:1;pointer-events:none;
+    background:linear-gradient(to top,var(--bg) 20%,rgba(0,0,0,.62) 50%,rgba(0,0,0,.12) 78%,transparent 100%)}
+  .ob-content{position:absolute;left:0;right:0;bottom:0;z-index:2;
+    padding:0 24px calc(34px + env(safe-area-inset-bottom))}
   .ob-headline{font-size:34px;font-weight:800;line-height:1.12;letter-spacing:-.8px;margin:0 0 14px}
   .ob-headline span{color:var(--accent)}
   .ob-sub{font-size:16px;color:var(--muted);line-height:1.5;margin:0 0 26px;max-width:440px}
@@ -281,22 +281,31 @@
   </div>
 
   <div id="onboardingView">
-    <div class="ob-collage">
-      <div class="ob-tile" style="left:6%;top:4%;rotate:-8deg" data-ob="Netflix"></div>
-      <div class="ob-tile" style="left:60%;top:3%;rotate:6deg" data-ob="Spotify"></div>
-      <div class="ob-tile" style="left:33%;top:9%;rotate:-4deg" data-ob="Disney+"></div>
-      <div class="ob-tile" style="left:79%;top:14%;rotate:7deg" data-ob="Prime Video"></div>
-      <div class="ob-tile" style="left:3%;top:26%;rotate:5deg" data-ob="YouTube Premium"></div>
-      <div class="ob-tile" style="left:46%;top:22%;rotate:-6deg" data-ob="Apple TV+"></div>
-      <div class="ob-tile" style="left:70%;top:33%;rotate:8deg" data-ob="HBO Max"></div>
-      <div class="ob-tile" style="left:19%;top:33%;rotate:-9deg" data-ob="iCloud+"></div>
-      <div class="ob-tile" style="left:52%;top:43%;rotate:4deg" data-ob="Audible"></div>
-      <div class="ob-tile" style="left:81%;top:53%;rotate:-5deg" data-ob="Paramount+"></div>
-      <div class="ob-tile" style="left:7%;top:51%;rotate:7deg" data-ob="Twitch"></div>
-      <div class="ob-tile" style="left:33%;top:59%;rotate:-7deg" data-ob="Canva"></div>
-      <div class="ob-tile" style="left:62%;top:63%;rotate:5deg" data-ob="Adobe"></div>
-      <div class="ob-tile" style="left:15%;top:73%;rotate:-6deg" data-ob="ChatGPT Plus"></div>
+    <div class="ob-field">
+      <div class="ob-tile" style="left:5%;top:2%;rotate:-8deg" data-ob="Netflix"></div>
+      <div class="ob-tile" style="left:58%;top:2%;rotate:6deg" data-ob="Spotify"></div>
+      <div class="ob-tile" style="left:32%;top:6%;rotate:-4deg" data-ob="Disney+"></div>
+      <div class="ob-tile" style="left:79%;top:8%;rotate:7deg" data-ob="Prime Video"></div>
+      <div class="ob-tile" style="left:3%;top:15%;rotate:5deg" data-ob="YouTube Premium"></div>
+      <div class="ob-tile" style="left:44%;top:15%;rotate:-6deg" data-ob="Apple TV+"></div>
+      <div class="ob-tile" style="left:67%;top:20%;rotate:8deg" data-ob="HBO Max"></div>
+      <div class="ob-tile" style="left:19%;top:23%;rotate:-9deg" data-ob="iCloud+"></div>
+      <div class="ob-tile" style="left:52%;top:30%;rotate:4deg" data-ob="Audible"></div>
+      <div class="ob-tile" style="left:81%;top:32%;rotate:-5deg" data-ob="Paramount+"></div>
+      <div class="ob-tile" style="left:5%;top:34%;rotate:7deg" data-ob="Twitch"></div>
+      <div class="ob-tile" style="left:33%;top:40%;rotate:-7deg" data-ob="Canva"></div>
+      <div class="ob-tile" style="left:61%;top:42%;rotate:5deg" data-ob="Adobe"></div>
+      <div class="ob-tile" style="left:15%;top:48%;rotate:-6deg" data-ob="ChatGPT Plus"></div>
+      <div class="ob-tile" style="left:45%;top:52%;rotate:6deg" data-ob="Hulu"></div>
+      <div class="ob-tile" style="left:77%;top:50%;rotate:-5deg" data-ob="Dropbox"></div>
+      <div class="ob-tile" style="left:7%;top:55%;rotate:7deg" data-ob="Slack"></div>
+      <div class="ob-tile" style="left:29%;top:62%;rotate:-6deg" data-ob="PlayStation"></div>
+      <div class="ob-tile" style="left:59%;top:63%;rotate:5deg" data-ob="Notion"></div>
+      <div class="ob-tile" style="left:80%;top:66%;rotate:-7deg" data-ob="Nintendo"></div>
+      <div class="ob-tile" style="left:17%;top:72%;rotate:6deg" data-ob="Xbox"></div>
+      <div class="ob-tile" style="left:47%;top:74%;rotate:-5deg" data-ob="Peacock"></div>
     </div>
+    <div class="ob-scrim"></div>
     <div class="ob-content">
       <h1 class="ob-headline">Every subscription.<br><span>One shock number.</span></h1>
       <p class="ob-sub">Track what you pay, catch free trials before they charge you, and never get surprise-charged again.</p>
@@ -852,9 +861,25 @@
     window.location.href = "mailto:hello@fend.app?subject=Fend support";
   });
 
-  // ---- Onboarding hero ----
+  // ---- Onboarding hero (real brand icons via each service's own favicon) ----
+  var OB_DOMAINS = {
+    netflix:"netflix.com", spotify:"spotify.com", disney:"disneyplus.com",
+    primevideo:"primevideo.com", youtubepremium:"youtube.com", appletv:"tv.apple.com",
+    hbomax:"max.com", icloud:"icloud.com", audible:"audible.com",
+    paramount:"paramountplus.com", twitch:"twitch.tv", canva:"canva.com",
+    adobe:"adobe.com", chatgptplus:"chatgpt.com", hulu:"hulu.com",
+    dropbox:"dropbox.com", slack:"slack.com", playstation:"playstation.com",
+    notion:"notion.so", nintendo:"nintendo.com", xbox:"xbox.com", peacock:"peacocktv.com"
+  };
+  function obIcon(name){
+    var letter = esc(((name||"?").trim().charAt(0) || "?").toUpperCase());
+    var d = OB_DOMAINS[norm(name)];
+    if(!d){ return '<span class="fallback" style="display:flex">'+letter+'</span>'; }
+    var url = "https://www.google.com/s2/favicons?domain="+d+"&sz=128";
+    return '<img class="logo" alt="" src="'+url+'" onerror="logoFail(this)"/><span class="fallback">'+letter+'</span>';
+  }
   document.querySelectorAll(".ob-tile").forEach(function(tile){
-    tile.innerHTML = iconHTMLraw(tile.getAttribute("data-ob"));
+    tile.innerHTML = obIcon(tile.getAttribute("data-ob"));
   });
   function iconHTMLraw(name){
     var b = BRANDS[norm(name)] || {};
