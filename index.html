@@ -504,7 +504,8 @@
   function onAuthed(session){
     document.getElementById("authView").style.display="none";
     document.getElementById("accountEmailLabel").textContent = session.user.email;
-    renderAll();
+    currentUserId = session.user.id;
+    loadSubs();
   }
   document.getElementById("logoutRow").addEventListener("click",function(){
     if(confirm("Log out?")){
@@ -516,19 +517,23 @@
     if(res.data.session){ onAuthed(res.data.session); }
   });
 
-  // ---- State (in-memory prototype; Supabase persistence comes next) ----
+  // ---- State (real data, loaded from Supabase after auth) ----
   var today = new Date(); today.setHours(0,0,0,0);
   function daysFromNow(n){var d=new Date(today);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+  function fromRow(r){
+    return {id:r.id,name:r.name,cost:Number(r.cost),cycle:r.cycle,cat:r.category,
+      trial:!!r.is_trial,trialEnd:r.trial_end_date,date:r.renewal_date,status:r.status};
+  }
+  function loadSubs(){
+    sb.from("subscriptions").select("*").order("renewal_date",{ascending:true}).then(function(res){
+      if(res.error){ alert("Couldn't load your subscriptions: "+res.error.message); return; }
+      subs = res.data.map(fromRow);
+      renderAll();
+    });
+  }
 
-  var subs = [
-    {id:1,name:"Disney+",cost:9.99,cycle:"monthly",cat:"streaming",trial:true,trialEnd:daysFromNow(2),date:daysFromNow(2),status:"active"},
-    {id:2,name:"Netflix",cost:15.99,cycle:"monthly",cat:"streaming",trial:false,date:daysFromNow(9),status:"active"},
-    {id:3,name:"Electric Ireland",cost:140,cycle:"monthly",cat:"bill",trial:false,date:daysFromNow(19),status:"active"},
-    {id:4,name:"Spotify",cost:11.99,cycle:"monthly",cat:"streaming",trial:false,date:daysFromNow(24),status:"active"},
-    {id:5,name:"iCloud+",cost:2.99,cycle:"monthly",cat:"software",trial:false,date:daysFromNow(28),status:"active"},
-    {id:6,name:"YouTube Premium",cost:12.99,cycle:"monthly",cat:"streaming",trial:false,date:daysFromNow(-3),status:"cancelled"}
-  ];
-  var nextId = 7;
+  var subs = [];
+  var currentUserId = null;
   var filter = "all";
   var editingId = null;
 
@@ -617,7 +622,7 @@
     var cards = el.querySelectorAll(".card");
     for(var i=0;i<cards.length;i++){
       cards[i].addEventListener("click",function(){
-        openSheet(parseInt(this.getAttribute("data-id"),10));
+        openSheet(this.getAttribute("data-id"));
       });
     }
   }
@@ -795,7 +800,7 @@
     for(var i2=0;i2<cards.length;i2++){
       cards[i2].addEventListener("click",function(){
         switchView("home");
-        openSheet(parseInt(this.getAttribute("data-id"),10));
+        openSheet(this.getAttribute("data-id"));
       });
     }
   }
@@ -889,7 +894,7 @@
 
   // ---- Sheet open/close ----
   function openSheet(id){
-    editingId = (typeof id==="number") ? id : null;
+    editingId = id || null;
     var t=document.getElementById("sheetTitle");
     var del=document.getElementById("deleteBtn");
     // reset
@@ -949,36 +954,58 @@
     var cat=document.getElementById("fCat").value;
     var trialEnd=document.getElementById("fTrialEnd").value;
 
-    var data={name:name,cost:cost,cycle:cycle,date:date,cat:cat,
-      trial:trialOn,trialEnd:trialOn?trialEnd:null};
+    var row={name:name,cost:cost,cycle:cycle,renewal_date:date,category:cat,
+      is_trial:trialOn,trial_end_date:trialOn?trialEnd:null};
+
+    var btn=this; btn.disabled=true;
 
     if(editingId){
-      subs=subs.map(function(s){return s.id===editingId?Object.assign({},s,data):s;});
+      sb.from("subscriptions").update(row).eq("id",editingId).select().single().then(function(res){
+        btn.disabled=false;
+        if(res.error){ alert("Couldn't save: "+res.error.message); return; }
+        var updated=fromRow(res.data);
+        subs=subs.map(function(s){return s.id===editingId?updated:s;});
+        closeSheet(); renderAll();
+      });
     } else {
-      data.id=nextId++; data.status="active"; subs.push(data);
+      row.user_id=currentUserId; row.status="active";
+      sb.from("subscriptions").insert(row).select().single().then(function(res){
+        btn.disabled=false;
+        if(res.error){ alert("Couldn't save: "+res.error.message); return; }
+        subs.push(fromRow(res.data));
+        closeSheet(); renderAll();
+      });
     }
-    closeSheet(); renderAll();
   });
 
   // ---- Cancel / reactivate toggle ----
   document.getElementById("cancelToggleBtn").addEventListener("click",function(){
     if(!editingId) return;
-    subs=subs.map(function(s){
-      if(s.id!==editingId) return s;
-      return Object.assign({},s,{status:s.status==="cancelled"?"active":"cancelled"});
+    var current=subs.filter(function(s){return s.id===editingId;})[0];
+    if(!current) return;
+    var newStatus = current.status==="cancelled" ? "active" : "cancelled";
+    var btn=this; btn.disabled=true;
+    sb.from("subscriptions").update({status:newStatus}).eq("id",editingId).then(function(res){
+      btn.disabled=false;
+      if(res.error){ alert("Couldn't update: "+res.error.message); return; }
+      subs=subs.map(function(s){return s.id===editingId?Object.assign({},s,{status:newStatus}):s;});
+      closeSheet(); renderAll();
     });
-    closeSheet(); renderAll();
   });
 
   // ---- Delete ----
   document.getElementById("deleteBtn").addEventListener("click",function(){
-    if(editingId && confirm("Delete this subscription?")){
+    if(!editingId || !confirm("Delete this subscription?")) return;
+    var btn=this; btn.disabled=true;
+    sb.from("subscriptions").delete().eq("id",editingId).then(function(res){
+      btn.disabled=false;
+      if(res.error){ alert("Couldn't delete: "+res.error.message); return; }
       subs=subs.filter(function(s){return s.id!==editingId;});
       closeSheet(); renderAll();
-    }
+    });
   });
 
-  // renderAll() now runs from onAuthed() once a session is confirmed
+  // renderAll() now runs from loadSubs() after onAuthed() fetches real data
 </script>
 </body>
 </html>
