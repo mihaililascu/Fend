@@ -564,12 +564,40 @@
 
   var presets = [
     {name:"Netflix",cost:15.99,cat:"streaming",label:"Video on demand"},
-    {name:"Spotify",cost:11.99,cat:"streaming",label:"Music"},
     {name:"Disney+",cost:9.99,cat:"streaming",label:"Video on demand"},
     {name:"Amazon Prime",cost:8.99,cat:"streaming",label:"Shopping & video"},
     {name:"YouTube Premium",cost:12.99,cat:"streaming",label:"Video, ad-free"},
+    {name:"Apple TV+",cost:9.99,cat:"streaming",label:"Video on demand"},
+    {name:"HBO Max",cost:9.99,cat:"streaming",label:"Video on demand"},
+    {name:"Paramount+",cost:7.99,cat:"streaming",label:"Video on demand"},
+    {name:"Hulu",cost:17.99,cat:"streaming",label:"Video on demand"},
+    {name:"Peacock",cost:7.99,cat:"streaming",label:"Video on demand"},
+    {name:"Crunchyroll",cost:6.49,cat:"streaming",label:"Anime"},
+    {name:"NOW",cost:9.99,cat:"streaming",label:"Video on demand"},
+    {name:"BritBox",cost:5.99,cat:"streaming",label:"British TV"},
+    {name:"DAZN",cost:19.99,cat:"streaming",label:"Live sport"},
+    {name:"Spotify",cost:11.99,cat:"streaming",label:"Music"},
+    {name:"Apple Music",cost:10.99,cat:"streaming",label:"Music"},
+    {name:"Tidal",cost:10.99,cat:"streaming",label:"Music"},
+    {name:"Deezer",cost:11.99,cat:"streaming",label:"Music"},
+    {name:"Audible",cost:7.99,cat:"streaming",label:"Audiobooks"},
+    {name:"iCloud+",cost:2.99,cat:"software",label:"Cloud storage"},
+    {name:"Google One",cost:1.99,cat:"software",label:"Cloud storage"},
+    {name:"Dropbox",cost:9.99,cat:"software",label:"Cloud storage"},
+    {name:"Microsoft 365",cost:7.99,cat:"software",label:"Office apps"},
+    {name:"Notion",cost:9.99,cat:"software",label:"Notes & docs"},
+    {name:"Adobe",cost:19.99,cat:"software",label:"Creative Cloud"},
+    {name:"Canva",cost:12.99,cat:"software",label:"Design"},
     {name:"ChatGPT Plus",cost:23,cat:"software",label:"AI assistant"},
-    {name:"iCloud+",cost:2.99,cat:"software",label:"Cloud storage"}
+    {name:"Grammarly",cost:12,cat:"software",label:"Writing"},
+    {name:"NordVPN",cost:11.99,cat:"software",label:"VPN"},
+    {name:"LinkedIn Premium",cost:29.99,cat:"software",label:"Networking"},
+    {name:"PlayStation Plus",cost:13.99,cat:"other",label:"Gaming"},
+    {name:"Xbox Game Pass",cost:12.99,cat:"other",label:"Gaming"},
+    {name:"Nintendo Online",cost:3.99,cat:"other",label:"Gaming"},
+    {name:"Twitch",cost:8.99,cat:"other",label:"Streaming"},
+    {name:"Discord Nitro",cost:9.99,cat:"other",label:"Chat"},
+    {name:"Duolingo",cost:12.99,cat:"other",label:"Language"}
   ];
 
   // ---- Helpers ----
@@ -690,13 +718,18 @@
 
   // Real brand icons via each service's own favicon (covers brands Simple Icons dropped)
   var LOGO_DOMAINS = {
-    netflix:"netflix.com", spotify:"spotify.com", disney:"disneyplus.com",
-    primevideo:"primevideo.com", amazonprime:"amazon.com", youtubepremium:"youtube.com",
-    appletv:"tv.apple.com", hbomax:"max.com", icloud:"icloud.com", audible:"audible.com",
-    paramount:"paramountplus.com", twitch:"twitch.tv", canva:"canva.com", adobe:"adobe.com",
-    chatgptplus:"chatgpt.com", hulu:"hulu.com", dropbox:"dropbox.com", slack:"slack.com",
-    playstation:"playstation.com", notion:"notion.so", nintendo:"nintendo.com",
-    xbox:"xbox.com", peacock:"peacocktv.com"
+    netflix:"netflix.com", disney:"disneyplus.com", amazonprime:"amazon.com",
+    primevideo:"primevideo.com", youtubepremium:"youtube.com", appletv:"tv.apple.com",
+    hbomax:"max.com", paramount:"paramountplus.com", hulu:"hulu.com", peacock:"peacocktv.com",
+    crunchyroll:"crunchyroll.com", now:"nowtv.com", britbox:"britbox.com", dazn:"dazn.com",
+    spotify:"spotify.com", applemusic:"music.apple.com", tidal:"tidal.com", deezer:"deezer.com",
+    audible:"audible.com", icloud:"icloud.com", googleone:"one.google.com", dropbox:"dropbox.com",
+    microsoft365:"microsoft.com", notion:"notion.so", adobe:"adobe.com", canva:"canva.com",
+    chatgptplus:"chatgpt.com", grammarly:"grammarly.com", nordvpn:"nordvpn.com",
+    linkedinpremium:"linkedin.com", playstationplus:"playstation.com", xboxgamepass:"xbox.com",
+    nintendoonline:"nintendo.com", twitch:"twitch.tv", discordnitro:"discord.com",
+    duolingo:"duolingo.com",
+    slack:"slack.com", playstation:"playstation.com", nintendo:"nintendo.com", xbox:"xbox.com"
   };
   function faviconURL(name){
     var d = LOGO_DOMAINS[norm(name)];
