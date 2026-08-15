@@ -272,7 +272,7 @@
     </div>
   </div>
 
-  <div id="onboardingView">
+  <div id="onboardingView" style="display:none">
     <div class="ob-collage">
       <div class="ob-tile" style="left:8%;top:6%;transform:rotate(-8deg)" data-ob="Netflix"></div>
       <div class="ob-tile" style="left:58%;top:2%;transform:rotate(6deg)" data-ob="Spotify"></div>
@@ -530,6 +530,7 @@
     sb.from("subscriptions").select("*").order("renewal_date",{ascending:true}).then(function(res){
       if(res.error){ alert("Couldn't load your subscriptions: "+res.error.message); return; }
       subs = res.data.map(fromRow);
+      document.getElementById("onboardingView").style.display = subs.length===0 ? "flex" : "none";
       renderAll();
     });
   }
