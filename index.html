@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#000000" />
+<title>Fend</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#000000;
+    --surface:#1a1a1e;
+    --surface-2:#232327;
+    --line:#2c2c31;
+    --text:#ffffff;
+    --muted:#8a8a90;
+    --accent:#10b981;
+    --accent-2:#34d399;
+    --accent-dim:#059669;
+    --amber:#f59e0b;
+    --radius:20px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  body{max-width:520px;margin:0 auto;min-height:100vh;position:relative;
+    padding:0 20px calc(120px + env(safe-area-inset-bottom));padding-top:env(safe-area-inset-top)}
+
+  /* Header */
+  .topbar{display:flex;align-items:center;justify-content:space-between;
+    padding:22px 0 8px}
+  .wordmark{font-size:26px;font-weight:800;letter-spacing:-.5px}
+  .wordmark span{color:var(--accent)}
+  .gopro{background:linear-gradient(120deg,var(--accent),var(--accent-2));
+    border:none;color:#fff;font-family:inherit;font-weight:700;font-size:15px;
+    padding:10px 16px;border-radius:999px;display:flex;align-items:center;gap:6px}
+
+  /* Hero shock number */
+  .hero{background:var(--surface);border-radius:var(--radius);padding:22px 22px 20px;
+    margin-top:14px;border:1px solid var(--line);position:relative;overflow:hidden}
+  .hero::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;
+    background:radial-gradient(circle,rgba(16,185,129,.28),transparent 70%);pointer-events:none}
+  .hero .label{font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.3px;
+    text-transform:uppercase}
+  .hero .big{font-size:46px;font-weight:800;letter-spacing:-1.5px;margin:6px 0 2px;line-height:1}
+  .hero .big small{font-size:20px;font-weight:600;color:var(--muted);letter-spacing:0}
+  .hero .sub{font-size:15px;color:var(--muted);font-weight:500}
+  .hero .sub b{color:var(--text);font-weight:700}
+
+  /* Filter pills */
+  .pills{display:flex;gap:10px;margin:20px 0 6px;overflow-x:auto;scrollbar-width:none}
+  .pills::-webkit-scrollbar{display:none}
+  .pill{flex:0 0 auto;background:var(--surface-2);color:var(--text);border:none;
+    font-family:inherit;font-weight:600;font-size:15px;padding:10px 20px;border-radius:999px}
+  .pill.active{background:#fff;color:#000}
+
+  /* List */
+  .section-label{font-size:15px;color:var(--muted);font-weight:600;margin:18px 2px 10px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px}
+  .card.trial{border-color:rgba(245,158,11,.45);
+    background:linear-gradient(180deg,rgba(245,158,11,.06),transparent),var(--surface)}
+  .card.cancelled{opacity:.55}
+  .card.cancelled .icon{filter:grayscale(1)}
+  .icon{width:46px;height:46px;border-radius:14px;background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden}
+  .icon img.logo{width:26px;height:26px;object-fit:contain;display:block}
+  .icon .fallback{display:none;font-size:20px;font-weight:800;color:#fff}
+  .card .mid{flex:1;min-width:0}
+  .card .name{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis}
+  .card .meta{font-size:14px;color:var(--muted);font-weight:500;margin-top:3px}
+  .card .meta .warn{color:var(--amber);font-weight:700}
+  .badge{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.4px;
+    color:#000;background:var(--amber);padding:3px 8px;border-radius:999px;margin-bottom:5px}
+  .card .right{text-align:right;flex:0 0 auto}
+  .card .price{font-size:17px;font-weight:800}
+  .card .cyc{font-size:12px;color:var(--muted);font-weight:600}
+
+  /* Empty */
+  .empty{text-align:center;padding:60px 20px;color:var(--muted)}
+  .empty .e-title{font-size:19px;font-weight:700;color:var(--text);margin-bottom:6px}
+  .empty .e-sub{font-size:15px}
+
+  /* Calendar */
+  .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-top:18px}
+  .cal-nav button{background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+    width:38px;height:38px;border-radius:12px;font-size:18px;font-family:inherit}
+  .cal-title{font-size:17px;font-weight:700}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:14px}
+  .cal-dow{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding-bottom:4px}
+  .cal-day{aspect-ratio:1;background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative}
+  .cal-day.empty-cell{background:transparent;border:none}
+  .cal-day.today{border-color:var(--accent)}
+  .cal-day .dnum{font-size:12px;color:var(--muted);font-weight:600}
+  .cal-day .dots{display:flex;gap:2px}
+  .cal-day .dot{width:6px;height:6px;border-radius:999px;background:var(--accent)}
+  .cal-day .dot.trial-dot{background:var(--amber)}
+
+  /* Settings */
+  .settings-promo{background:linear-gradient(135deg,var(--accent-dim),var(--accent));
+    border-radius:var(--radius);padding:22px;margin-top:16px;color:#04150f}
+  .sp-icon{width:40px;height:40px;border-radius:12px;background:rgba(4,21,15,.18);
+    display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:10px}
+  .sp-title{font-size:21px;font-weight:800}
+  .sp-sub{font-size:14px;opacity:.85;margin-top:4px;font-weight:600}
+  .sp-cta{width:100%;background:#04150f;color:#fff;border:none;font-family:inherit;
+    font-weight:700;font-size:15px;padding:14px;border-radius:14px;margin-top:16px}
+  .settings-list{background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);overflow:hidden;margin-top:10px}
+  .settings-row{display:flex;align-items:center;gap:14px;padding:15px 16px;
+    border-bottom:1px solid var(--line)}
+  .settings-row:last-child{border-bottom:none}
+  .sr-icon{width:34px;height:34px;border-radius:10px;background:var(--surface-2);
+    display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
+  .sr-label{flex:1;font-size:16px;font-weight:600}
+  .sr-value{color:var(--muted);font-size:14px;font-weight:600}
+
+  /* Due soon reassurance card */
+  .due-soon{background:linear-gradient(180deg,rgba(16,185,129,.10),transparent),var(--surface);
+    border:1px solid rgba(16,185,129,.35);border-radius:var(--radius);
+    padding:20px;margin-top:14px;display:flex;align-items:center;gap:16px}
+  .ds-emoji{font-size:34px;flex:0 0 auto}
+  .ds-title{font-size:18px;font-weight:800;color:var(--accent-2)}
+  .ds-sub{font-size:14px;color:var(--muted);margin-top:3px;line-height:1.4}
+
+  /* Get started checklist */
+  .checklist{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;margin-top:14px}
+  .cl-head{font-size:13px;font-weight:800;letter-spacing:.4px;color:var(--muted)}
+  .cl-head span{font-weight:600}
+  .cl-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+  .cl-check{width:22px;height:22px;border-radius:999px;border:2px solid var(--line);
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;
+    color:#04150f;flex:0 0 auto}
+  .cl-row.done .cl-check{background:var(--accent);border-color:var(--accent)}
+  .cl-label{font-size:15px;font-weight:600;color:var(--text)}
+  .cl-row.done .cl-label{color:var(--muted);text-decoration:line-through}
+
+  /* Bottom nav + FAB */
+  .nav{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;
+    height:calc(88px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);
+    background:linear-gradient(180deg,transparent,#000 38%);
+    display:flex;align-items:center;justify-content:space-around;pointer-events:none}
+  .nav button{pointer-events:auto;background:none;border:none;color:var(--muted);
+    font-family:inherit;font-size:24px;padding:8px}
+  .nav button.on{color:#fff}
+  .fab{width:64px;height:64px;border-radius:999px;
+    background:linear-gradient(140deg,var(--accent),var(--accent-dim))!important;
+    color:#fff!important;font-size:32px!important;font-weight:300;
+    box-shadow:0 8px 24px rgba(16,185,129,.5);display:flex;align-items:center;
+    justify-content:center;margin-top:-24px}
+
+  /* Sheet */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;
+    transition:opacity .22s;z-index:20}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;
+    background:#141417;border-radius:26px 26px 0 0;border:1px solid var(--line);
+    border-bottom:none;padding:8px 20px calc(28px + env(safe-area-inset-bottom));
+    transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);z-index:21;
+    max-height:92vh;overflow-y:auto}
+  .sheet.show{transform:translateY(0)}
+  .grab{width:40px;height:5px;border-radius:999px;background:#3a3a40;margin:8px auto 14px}
+  .sheet h2{font-size:22px;font-weight:800;margin:0 0 4px}
+  .field{margin-top:16px}
+  .field label{display:block;font-size:14px;font-weight:600;color:var(--muted);margin-bottom:7px}
+  input,select{width:100%;background:var(--surface-2);border:1px solid var(--line);
+    color:var(--text);font-family:inherit;font-size:16px;font-weight:600;
+    padding:14px;border-radius:14px;outline:none}
+  input:focus,select:focus{border-color:var(--accent)}
+  input::placeholder{color:#6a6a70;font-weight:500}
+  .row2{display:flex;gap:12px}
+  .row2>div{flex:1}
+  .preset-scroll{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;
+    padding-bottom:2px;margin:0 -20px;padding-left:20px;padding-right:20px}
+  .preset-scroll::-webkit-scrollbar{display:none}
+  .preset-card{flex:0 0 auto;width:136px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:16px;padding:12px;text-align:left;font-family:inherit;color:var(--text)}
+  .preset-card:active{border-color:var(--accent)}
+  .preset-card .pc-top{display:flex;align-items:center;justify-content:space-between}
+  .preset-card .icon{width:38px;height:38px;border-radius:11px}
+  .preset-card .pc-plus{width:26px;height:26px;border-radius:999px;background:var(--accent);
+    color:#04150f;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .preset-card .pc-name{font-size:14px;font-weight:700;margin-top:10px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .preset-card .pc-label{font-size:12px;color:var(--muted);font-weight:500;margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:14px;
+    padding:14px;margin-top:16px}
+  .toggle-row span{font-size:16px;font-weight:600}
+  .sw{width:52px;height:30px;border-radius:999px;background:#3a3a40;position:relative;
+    transition:background .2s;flex:0 0 auto}
+  .sw.on{background:var(--accent)}
+  .sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;
+    border-radius:999px;background:#fff;transition:transform .2s}
+  .sw.on::after{transform:translateX(22px)}
+  .trial-fields{display:none;margin-top:4px}
+  .trial-fields.show{display:block}
+  .save{width:100%;background:var(--accent);border:none;color:#fff;font-family:inherit;
+    font-weight:700;font-size:17px;padding:16px;border-radius:16px;margin-top:22px}
+  .delete{width:100%;background:none;border:none;color:#ff5a5a;font-family:inherit;
+    font-weight:600;font-size:15px;padding:14px;margin-top:6px}
+  .cancel-toggle{width:100%;background:var(--surface-2);border:1px solid var(--line);
+    color:var(--text);font-family:inherit;font-weight:700;font-size:15px;
+    padding:14px;border-radius:16px;margin-top:10px}
+  .hint{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.4}
+
+  /* Auth gate */
+  #authView{position:fixed;inset:0;z-index:60;background:var(--bg);
+    display:flex;flex-direction:column;justify-content:center;
+    padding:0 24px env(safe-area-inset-bottom);overflow-y:auto}
+  .auth-word{font-size:32px;font-weight:800;letter-spacing:-.5px;color:var(--accent);
+    text-align:center;margin-bottom:6px}
+  .auth-tag{font-size:15px;color:var(--muted);text-align:center;margin-bottom:32px}
+  .auth-field{margin-bottom:12px}
+  .auth-field input{width:100%;background:var(--surface);border:1px solid var(--line);
+    color:var(--text);font-family:inherit;font-size:16px;font-weight:600;
+    padding:14px;border-radius:14px;outline:none}
+  .auth-field input:focus{border-color:var(--accent)}
+  .auth-btn{width:100%;background:var(--accent);color:#04150f;border:none;
+    font-family:inherit;font-weight:800;font-size:16px;padding:15px;
+    border-radius:16px;margin-top:8px}
+  .auth-btn:disabled{opacity:.6}
+  .auth-switch{text-align:center;margin-top:18px;font-size:14px;color:var(--muted)}
+  .auth-switch b{color:var(--accent);font-weight:700}
+  .auth-error{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);
+    color:#f87171;font-size:14px;font-weight:600;padding:12px 14px;
+    border-radius:12px;margin-bottom:14px;display:none}
+  .auth-msg{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);
+    color:var(--accent-2);font-size:14px;font-weight:600;padding:12px 14px;
+    border-radius:12px;margin-bottom:14px;display:none}
+
+  /* Onboarding hero */
+  #onboardingView{position:fixed;inset:0;z-index:50;background:var(--bg);
+    display:flex;flex-direction:column;overflow:hidden;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  .ob-collage{position:relative;flex:0 0 40vh;min-height:220px}
+  .ob-tile{position:absolute;width:64px;height:64px;border-radius:18px;background:var(--surface);
+    border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
+    box-shadow:0 10px 24px rgba(0,0,0,.35)}
+  .ob-tile img.logo{width:32px;height:32px;object-fit:contain}
+  .ob-tile .fallback{display:none;font-size:24px;font-weight:800;color:#fff}
+  .ob-content{flex:1;display:flex;flex-direction:column;justify-content:flex-end;
+    padding:0 24px calc(36px + env(safe-area-inset-bottom))}
+  .ob-headline{font-size:34px;font-weight:800;line-height:1.12;letter-spacing:-.8px;margin:0 0 14px}
+  .ob-headline span{color:var(--accent)}
+  .ob-sub{font-size:16px;color:var(--muted);line-height:1.5;margin:0 0 26px;max-width:440px}
+  .ob-cta{width:100%;background:linear-gradient(120deg,var(--accent),var(--accent-2));
+    border:none;color:#04150f;font-family:inherit;font-weight:800;font-size:17px;
+    padding:17px;border-radius:16px}
+  .ob-fine{text-align:center;font-size:13px;color:var(--muted);margin-top:14px}
+</style>
+</head>
+<body>
+  <div id="authView">
+    <div class="auth-word">Fend</div>
+    <div class="auth-tag" id="authTag">Never get surprise-charged again.</div>
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-msg" id="authMsg"></div>
+    <div class="auth-field"><input type="email" id="authEmail" placeholder="Email" autocomplete="email" /></div>
+    <div class="auth-field"><input type="password" id="authPassword" placeholder="Password (min 6 characters)" autocomplete="current-password" /></div>
+    <button class="auth-btn" id="authSubmit">Log in</button>
+    <div class="auth-switch">
+      <span id="authSwitchText">Don't have an account?</span> <b id="authSwitchBtn">Sign up</b>
+    </div>
+  </div>
+
+  <div id="onboardingView">
+    <div class="ob-collage">
+      <div class="ob-tile" style="left:8%;top:6%;transform:rotate(-8deg)" data-ob="Netflix"></div>
+      <div class="ob-tile" style="left:58%;top:2%;transform:rotate(6deg)" data-ob="Spotify"></div>
+      <div class="ob-tile" style="left:78%;top:22%;transform:rotate(-5deg)" data-ob="iCloud+"></div>
+      <div class="ob-tile" style="left:4%;top:34%;transform:rotate(4deg)" data-ob="YouTube Premium"></div>
+      <div class="ob-tile" style="left:62%;top:38%;transform:rotate(-7deg)" data-ob="ChatGPT Plus"></div>
+      <div class="ob-tile" style="left:24%;top:14%;transform:rotate(9deg)" data-ob="Audible"></div>
+    </div>
+    <div class="ob-content">
+      <h1 class="ob-headline">Every subscription.<br><span>One shock number.</span></h1>
+      <p class="ob-sub">Track what you pay, catch free trials before they charge you, and never get surprise-charged again.</p>
+      <button class="ob-cta" id="obContinue">Get started →</button>
+      <div class="ob-fine">Free to see your spend. Upgrade to unlock reminders.</div>
+    </div>
+  </div>
+
+  <div class="topbar">
+    <div class="wordmark"><span>Fend</span></div>
+    <button class="gopro">Go Pro ✦</button>
+  </div>
+
+  <div id="homeView">
+    <div class="hero">
+      <div class="label">You're spending</div>
+      <div class="big" id="heroMonthly">€0<small>/mo</small></div>
+      <div class="sub">That's <b id="heroYearly">€0</b> a year across <b id="heroCount">0</b> subscriptions</div>
+    </div>
+
+    <div id="checklistCard" style="display:none"></div>
+
+    <div id="dueSoonCard" style="display:none"></div>
+
+    <div class="pills" id="pills">
+      <button class="pill active" data-filter="all">All</button>
+      <button class="pill" data-filter="trial">Trials</button>
+      <button class="pill" data-filter="bill">Bills</button>
+      <button class="pill" data-filter="cancelled">Cancelled</button>
+    </div>
+
+    <div id="list"></div>
+  </div>
+
+  <div id="calendarView" style="display:none">
+    <div class="cal-nav">
+      <button id="calPrev">‹</button>
+      <div class="cal-title" id="calTitle">—</div>
+      <button id="calNext">›</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="section-label" id="calListLabel">Renewals this month</div>
+    <div id="calList"></div>
+  </div>
+
+  <div id="settingsView" style="display:none">
+    <div class="settings-promo">
+      <div class="sp-icon">✦</div>
+      <div class="sp-title">Unlock Premium</div>
+      <div class="sp-sub">Remove ads · Renewal reminders · Trial alerts</div>
+      <button class="sp-cta">Upgrade Now →</button>
+    </div>
+
+    <div class="section-label">General</div>
+    <div class="settings-list">
+      <div class="settings-row">
+        <div class="sr-icon">🔔</div>
+        <div class="sr-label">Push Notifications</div>
+        <div class="sw on" id="notifSw"></div>
+      </div>
+      <div class="settings-row" id="currencyRow">
+        <div class="sr-icon">💶</div>
+        <div class="sr-label">Currency</div>
+        <div class="sr-value">EUR (€) ›</div>
+      </div>
+      <div class="settings-row">
+        <div class="sr-icon">⭐</div>
+        <div class="sr-label">Rate Us</div>
+        <div class="sr-value">›</div>
+      </div>
+      <div class="settings-row">
+        <div class="sr-icon">📄</div>
+        <div class="sr-label">Terms of Use</div>
+        <div class="sr-value">›</div>
+      </div>
+      <div class="settings-row">
+        <div class="sr-icon">🛡️</div>
+        <div class="sr-label">Privacy Policy</div>
+        <div class="sr-value">›</div>
+      </div>
+      <div class="settings-row" id="supportRow">
+        <div class="sr-icon">✉️</div>
+        <div class="sr-label">Support</div>
+        <div class="sr-value">›</div>
+      </div>
+    </div>
+
+    <div class="section-label">Account</div>
+    <div class="settings-list">
+      <div class="settings-row">
+        <div class="sr-icon">👤</div>
+        <div class="sr-label" id="accountEmailLabel">Logged in</div>
+      </div>
+      <div class="settings-row" id="logoutRow">
+        <div class="sr-icon">🚪</div>
+        <div class="sr-label" style="color:#f87171">Log out</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="on" id="navHome" title="Home">⌂</button>
+    <button id="navCalendar" title="Calendar">▦</button>
+    <button class="fab" id="addBtn">+</button>
+    <button id="navSettings" title="Settings">☰</button>
+  </div>
+
+  <!-- Add / edit sheet -->
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet">
+    <div class="grab"></div>
+    <h2 id="sheetTitle">Add subscription</h2>
+
+    <div class="field">
+      <label>Quick add</label>
+      <div class="preset-scroll" id="presetChips"></div>
+    </div>
+
+    <div class="field">
+      <label>Name</label>
+      <input id="fName" placeholder="e.g. Netflix" />
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Cost (€)</label>
+        <input id="fCost" type="number" inputmode="decimal" placeholder="0.00" />
+      </div>
+      <div class="field">
+        <label>Billing</label>
+        <select id="fCycle">
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Next renewal date</label>
+      <input id="fDate" type="date" />
+    </div>
+
+    <div class="field">
+      <label>Category</label>
+      <select id="fCat">
+        <option value="streaming">Streaming</option>
+        <option value="software">Software</option>
+        <option value="bill">Bill (energy, broadband, insurance, phone)</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+
+    <div class="toggle-row" id="trialToggle">
+      <span>Free trial?</span>
+      <div class="sw" id="trialSw"></div>
+    </div>
+    <div class="trial-fields" id="trialFields">
+      <div class="field">
+        <label>Trial ends on</label>
+        <input id="fTrialEnd" type="date" />
+      </div>
+      <div class="hint">We'll remind you before it ends so you can cancel before the first charge.</div>
+    </div>
+
+    <button class="save" id="saveBtn">Save</button>
+    <button class="cancel-toggle" id="cancelToggleBtn" style="display:none"></button>
+    <button class="delete" id="deleteBtn" style="display:none">Delete subscription</button>
+  </div>
+
+<script>
+  // ---- Supabase ----
+  var SUPABASE_URL = "https://aspthonlkffmbleuirzg.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_MfSpo1rk6-1Zz4lk2HRPIg_5vFdLfA9";
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ---- Auth ----
+  var authMode = "login"; // "login" | "signup"
+  function showAuthError(msg){
+    var el=document.getElementById("authError");
+    el.textContent=msg; el.style.display="block";
+    document.getElementById("authMsg").style.display="none";
+  }
+  function showAuthMsg(msg){
+    var el=document.getElementById("authMsg");
+    el.textContent=msg; el.style.display="block";
+    document.getElementById("authError").style.display="none";
+  }
+  function clearAuthNotices(){
+    document.getElementById("authError").style.display="none";
+    document.getElementById("authMsg").style.display="none";
+  }
+  document.getElementById("authSwitchBtn").addEventListener("click",function(){
+    authMode = authMode==="login" ? "signup" : "login";
+    document.getElementById("authSubmit").textContent = authMode==="login" ? "Log in" : "Sign up";
+    document.getElementById("authSwitchText").textContent = authMode==="login" ? "Don't have an account?" : "Already have an account?";
+    document.getElementById("authSwitchBtn").textContent = authMode==="login" ? "Sign up" : "Log in";
+    clearAuthNotices();
+  });
+  document.getElementById("authSubmit").addEventListener("click",function(){
+    var email=document.getElementById("authEmail").value.trim();
+    var password=document.getElementById("authPassword").value;
+    clearAuthNotices();
+    if(!email || !password){ showAuthError("Enter an email and password."); return; }
+    if(password.length<6){ showAuthError("Password needs at least 6 characters."); return; }
+    var btn=this; btn.disabled=true;
+    var action = authMode==="login"
+      ? sb.auth.signInWithPassword({email:email,password:password})
+      : sb.auth.signUp({email:email,password:password});
+    action.then(function(res){
+      btn.disabled=false;
+      if(res.error){ showAuthError(res.error.message); return; }
+      if(authMode==="signup" && !res.data.session){
+        showAuthMsg("Check your email to confirm your account, then log in.");
+        authMode="login";
+        document.getElementById("authSubmit").textContent="Log in";
+        return;
+      }
+      onAuthed(res.data.session);
+    });
+  });
+  function onAuthed(session){
+    document.getElementById("authView").style.display="none";
+    document.getElementById("accountEmailLabel").textContent = session.user.email;
+    renderAll();
+  }
+  document.getElementById("logoutRow").addEventListener("click",function(){
+    if(confirm("Log out?")){
+      sb.auth.signOut().then(function(){ location.reload(); });
+    }
+  });
+  // Check for an existing session on load
+  sb.auth.getSession().then(function(res){
+    if(res.data.session){ onAuthed(res.data.session); }
+  });
+
+  // ---- State (in-memory prototype; Supabase persistence comes next) ----
+  var today = new Date(); today.setHours(0,0,0,0);
+  function daysFromNow(n){var d=new Date(today);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+
+  var subs = [
+    {id:1,name:"Disney+",cost:9.99,cycle:"monthly",cat:"streaming",trial:true,trialEnd:daysFromNow(2),date:daysFromNow(2),status:"active"},
+    {id:2,name:"Netflix",cost:15.99,cycle:"monthly",cat:"streaming",trial:false,date:daysFromNow(9),status:"active"},
+    {id:3,name:"Electric Ireland",cost:140,cycle:"monthly",cat:"bill",trial:false,date:daysFromNow(19),status:"active"},
+    {id:4,name:"Spotify",cost:11.99,cycle:"monthly",cat:"streaming",trial:false,date:daysFromNow(24),status:"active"},
+    {id:5,name:"iCloud+",cost:2.99,cycle:"monthly",cat:"software",trial:false,date:daysFromNow(28),status:"active"},
+    {id:6,name:"YouTube Premium",cost:12.99,cycle:"monthly",cat:"streaming",trial:false,date:daysFromNow(-3),status:"cancelled"}
+  ];
+  var nextId = 7;
+  var filter = "all";
+  var editingId = null;
+
+  var presets = [
+    {name:"Netflix",cost:15.99,cat:"streaming",label:"Video on demand"},
+    {name:"Spotify",cost:11.99,cat:"streaming",label:"Music"},
+    {name:"Disney+",cost:9.99,cat:"streaming",label:"Video on demand"},
+    {name:"Amazon Prime",cost:8.99,cat:"streaming",label:"Shopping & video"},
+    {name:"YouTube Premium",cost:12.99,cat:"streaming",label:"Video, ad-free"},
+    {name:"ChatGPT Plus",cost:23,cat:"software",label:"AI assistant"},
+    {name:"iCloud+",cost:2.99,cat:"software",label:"Cloud storage"}
+  ];
+
+  // ---- Helpers ----
+  function monthlyCost(s){ return s.cycle==="yearly" ? s.cost/12 : s.cost; }
+  function daysUntil(dateStr){
+    var d=new Date(dateStr+"T00:00:00");
+    return Math.round((d - today)/86400000);
+  }
+  function money(n){ return "€"+n.toLocaleString("en-IE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function whenText(n){
+    if(n<0) return "renewed "+(-n)+"d ago";
+    if(n===0) return "renews today";
+    if(n===1) return "renews tomorrow";
+    return "renews in "+n+" days";
+  }
+
+  // ---- Render ----
+  function renderHero(){
+    var activeSubs = subs.filter(function(s){return s.status!=="cancelled";});
+    var m = activeSubs.reduce(function(a,s){return a+monthlyCost(s);},0);
+    document.getElementById("heroMonthly").innerHTML = money(m).replace(/€/,"€")+"<small>/mo</small>";
+    document.getElementById("heroYearly").textContent = money(m*12);
+    document.getElementById("heroCount").textContent = activeSubs.length;
+  }
+
+  function renderList(){
+    var el = document.getElementById("list");
+    var items = subs.slice();
+    if(filter==="cancelled"){
+      items = items.filter(function(s){return s.status==="cancelled";});
+    } else {
+      items = items.filter(function(s){return s.status!=="cancelled";});
+      if(filter==="trial") items = items.filter(function(s){return s.trial;});
+      if(filter==="bill") items = items.filter(function(s){return s.cat==="bill";});
+    }
+    items.sort(function(a,b){
+      var da = a.trial ? daysUntil(a.trialEnd) : daysUntil(a.date);
+      var db = b.trial ? daysUntil(b.trialEnd) : daysUntil(b.date);
+      return da - db;
+    });
+
+    if(items.length===0){
+      var msg = filter==="cancelled"
+        ? '<div class="e-title">No cancelled subscriptions</div><div class="e-sub">Anything you cancel stays here for your records.</div>'
+        : '<div class="e-title">Nothing here yet</div><div class="e-sub">Tap the + button to add your first subscription.</div>';
+      el.innerHTML = '<div class="empty">'+msg+'</div>';
+      return;
+    }
+
+    var html = '<div class="section-label">'+(filter==="cancelled"?"Cancelled":"Upcoming")+'</div>';
+    items.forEach(function(s){
+      var trialDays = s.trial ? daysUntil(s.trialEnd) : null;
+      var isCancelled = s.status==="cancelled";
+      html += '<div class="card'+(s.trial&&!isCancelled?' trial':'')+(isCancelled?' cancelled':'')+'" data-id="'+s.id+'">';
+      html += iconHTML(s);
+      html += '<div class="mid">';
+      if(isCancelled){
+        html += '<div class="name">'+esc(s.name)+'</div>';
+        html += '<div class="meta">Cancelled · was '+money(s.cost)+'/mo</div>';
+      } else if(s.trial){
+        html += '<div class="badge">TRIAL ENDS IN '+(trialDays<=0?'TODAY':trialDays+'D')+'</div>';
+        html += '<div class="name">'+esc(s.name)+'</div>';
+        html += '<div class="meta"><span class="warn">Cancel before you\'re charged</span> · then '+money(s.cost)+'/mo</div>';
+      } else {
+        html += '<div class="name">'+esc(s.name)+'</div>';
+        html += '<div class="meta">'+whenText(daysUntil(s.date))+'</div>';
+      }
+      html += '</div>';
+      html += '<div class="right"><div class="price">'+money(s.cost)+'</div>'+
+              '<div class="cyc">'+(s.cycle==="yearly"?"/yr":"/mo")+'</div></div>';
+      html += '</div>';
+    });
+    el.innerHTML = html;
+
+    var cards = el.querySelectorAll(".card");
+    for(var i=0;i<cards.length;i++){
+      cards[i].addEventListener("click",function(){
+        openSheet(parseInt(this.getAttribute("data-id"),10));
+      });
+    }
+  }
+
+  function esc(t){var d=document.createElement("div");d.textContent=t;return d.innerHTML;}
+
+  // ---- Logos (Simple Icons CDN, letter-tile fallback) ----
+  function norm(t){ return (t||"").toLowerCase().replace(/[^a-z0-9]/g,""); }
+  // key -> { slug, color? }. Slug verified against simple-icons/simple-icons slugs.md.
+  // No color = use the brand's real official color from the CDN. Color is only set
+  // where the official color is black/near-black and would vanish on the dark tile.
+  // Disney+ is deliberately absent: simple-icons has no icon for it (maintainers
+  // declined to add one), so it correctly falls through to the letter tile.
+  var BRANDS = {
+    netflix:{slug:"netflix"},
+    spotify:{slug:"spotify"},
+    amazonprime:{slug:"amazonprime"}, primevideo:{slug:"amazonprime"}, prime:{slug:"amazonprime"},
+    youtube:{slug:"youtube"}, youtubepremium:{slug:"youtube"},
+    chatgpt:{slug:"openai",color:"FFFFFF"}, chatgptplus:{slug:"openai",color:"FFFFFF"}, openai:{slug:"openai",color:"FFFFFF"},
+    icloud:{slug:"icloud"}, icloudplus:{slug:"icloud"},
+    applemusic:{slug:"applemusic"},
+    appletv:{slug:"appletv",color:"FFFFFF"}, appletvplus:{slug:"appletv",color:"FFFFFF"},
+    audible:{slug:"audible"},
+    dropbox:{slug:"dropbox"},
+    notion:{slug:"notion",color:"FFFFFF"},
+    adobe:{slug:"adobe"},
+    playstation:{slug:"playstation"}, playstationplus:{slug:"playstation"},
+    xbox:{slug:"xbox"}, xboxgamepass:{slug:"xbox"},
+    hbomax:{slug:"hbomax",color:"FFFFFF"}, max:{slug:"hbomax",color:"FFFFFF"}, hbo:{slug:"hbo",color:"FFFFFF"},
+    twitch:{slug:"twitch"},
+    linkedin:{slug:"linkedin"},
+    github:{slug:"github",color:"FFFFFF"},
+    grammarly:{slug:"grammarly"},
+    canva:{slug:"canva"},
+    figma:{slug:"figma"},
+    slack:{slug:"slack"}
+  };
+
+  function iconHTML(s){
+    var b = BRANDS[norm(s.name)] || {};
+    var slug = b.slug || norm(s.name);
+    var color = b.color || null;
+    var letter = esc(((s.name||"?").trim().charAt(0) || "?").toUpperCase());
+    if(!slug){
+      return '<div class="icon"><span class="fallback" style="display:flex">'+letter+'</span></div>';
+    }
+    var url = "https://cdn.simpleicons.org/"+slug+(color?"/"+color:"");
+    return '<div class="icon">'+
+      '<img class="logo" alt="" src="'+url+'" onerror="logoFail(this)"/>'+
+      '<span class="fallback">'+letter+'</span></div>';
+  }
+
+  function logoFail(img){
+    img.style.display="none";
+    var fb=img.parentNode.querySelector(".fallback");
+    if(fb) fb.style.display="flex";
+  }
+
+  function renderDueSoon(){
+    var card = document.getElementById("dueSoonCard");
+    if(filter!=="all"){ card.style.display="none"; return; }
+    var soon = subs.filter(function(s){
+      if(s.status==="cancelled") return false;
+      var d = s.trial ? daysUntil(s.trialEnd) : daysUntil(s.date);
+      return d>=0 && d<=7;
+    });
+    if(soon.length>0){ card.style.display="none"; return; }
+    card.style.display="flex";
+    card.className = "due-soon";
+    card.innerHTML = '<div class="ds-emoji">🌿</div><div><div class="ds-title">Nothing due soon</div>'+
+      '<div class="ds-sub">No renewals or trial deadlines in the next 7 days.</div></div>';
+  }
+
+  // ---- Get started checklist ----
+  var calendarVisited = false;
+  var checklistItems = [
+    {label:"Add your first subscription", done:function(){
+      return subs.filter(function(s){return s.status!=="cancelled";}).length>0;
+    }},
+    {label:"Turn on renewal reminders", done:function(){
+      var el=document.getElementById("notifSw");
+      return !!(el && el.classList.contains("on"));
+    }},
+    {label:"Check your renewal calendar", done:function(){ return calendarVisited; }}
+  ];
+  function renderChecklist(){
+    var card = document.getElementById("checklistCard");
+    var doneCount = checklistItems.filter(function(i){return i.done();}).length;
+    if(doneCount===checklistItems.length){ card.style.display="none"; return; }
+    card.style.display="block";
+    var html = '<div class="checklist"><div class="cl-head">GET STARTED <span>('+doneCount+'/'+checklistItems.length+')</span></div>';
+    checklistItems.forEach(function(i){
+      var d = i.done();
+      html += '<div class="cl-row'+(d?' done':'')+'"><div class="cl-check">'+(d?'✓':'')+'</div>'+
+        '<div class="cl-label">'+esc(i.label)+'</div></div>';
+    });
+    card.innerHTML = html+'</div>';
+  }
+
+  function renderAll(){ renderHero(); renderList(); renderDueSoon(); renderChecklist(); }
+
+  // ---- Calendar ----
+  var calOffset = 0; // months from current month
+  var DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  var MONTH_NAMES = ["January","February","March","April","May","June","July",
+    "August","September","October","November","December"];
+
+  function activeRenewalsInMonth(year, month){
+    // returns array of {day, sub, isTrial} for non-cancelled subs whose date/trialEnd falls in this year+month
+    var out = [];
+    subs.forEach(function(s){
+      if(s.status==="cancelled") return;
+      if(s.trial && s.trialEnd){
+        var td = new Date(s.trialEnd+"T00:00:00");
+        if(td.getFullYear()===year && td.getMonth()===month) out.push({day:td.getDate(),sub:s,isTrial:true});
+      }
+      var rd = new Date(s.date+"T00:00:00");
+      if(rd.getFullYear()===year && rd.getMonth()===month) out.push({day:rd.getDate(),sub:s,isTrial:false});
+    });
+    return out;
+  }
+
+  function renderCalendar(){
+    var base = new Date(today.getFullYear(), today.getMonth()+calOffset, 1);
+    var year = base.getFullYear(), month = base.getMonth();
+    document.getElementById("calTitle").textContent = MONTH_NAMES[month]+" "+year;
+
+    var firstDow = new Date(year, month, 1).getDay();
+    var daysInMonth = new Date(year, month+1, 0).getDate();
+    var renewals = activeRenewalsInMonth(year, month);
+    var byDay = {};
+    renewals.forEach(function(r){
+      byDay[r.day] = byDay[r.day] || [];
+      byDay[r.day].push(r);
+    });
+
+    var grid = document.getElementById("calGrid");
+    var html = "";
+    DOW.forEach(function(d){ html += '<div class="cal-dow">'+d+'</div>'; });
+    for(var i=0;i<firstDow;i++) html += '<div class="cal-day empty-cell"></div>';
+    var isCurrentMonth = (year===today.getFullYear() && month===today.getMonth());
+    for(var d=1; d<=daysInMonth; d++){
+      var isToday = isCurrentMonth && d===today.getDate();
+      html += '<div class="cal-day'+(isToday?' today':'')+'"><div class="dnum">'+d+'</div>';
+      if(byDay[d]){
+        html += '<div class="dots">';
+        byDay[d].slice(0,4).forEach(function(r){
+          html += '<div class="dot'+(r.isTrial?' trial-dot':'')+'"></div>';
+        });
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    grid.innerHTML = html;
+
+    var listEl = document.getElementById("calList");
+    if(renewals.length===0){
+      listEl.innerHTML = '<div class="empty"><div class="e-title">Nothing renewing</div>'+
+        '<div class="e-sub">No renewals or trial deadlines this month.</div></div>';
+      return;
+    }
+    renewals.sort(function(a,b){return a.day-b.day;});
+    var lhtml = "";
+    renewals.forEach(function(r){
+      var s = r.sub;
+      lhtml += '<div class="card'+(r.isTrial?' trial':'')+'" data-id="'+s.id+'">';
+      lhtml += iconHTML(s);
+      lhtml += '<div class="mid"><div class="name">'+esc(s.name)+'</div>';
+      lhtml += '<div class="meta">'+(r.isTrial?'Trial ends':'Renews')+' on the '+r.day+(r.isTrial?'':'')+'</div></div>';
+      lhtml += '<div class="right"><div class="price">'+money(s.cost)+'</div><div class="cyc">'+(s.cycle==="yearly"?"/yr":"/mo")+'</div></div>';
+      lhtml += '</div>';
+    });
+    listEl.innerHTML = lhtml;
+    var cards = listEl.querySelectorAll(".card");
+    for(var i2=0;i2<cards.length;i2++){
+      cards[i2].addEventListener("click",function(){
+        switchView("home");
+        openSheet(parseInt(this.getAttribute("data-id"),10));
+      });
+    }
+  }
+
+  document.getElementById("calPrev").addEventListener("click",function(){ calOffset--; renderCalendar(); });
+  document.getElementById("calNext").addEventListener("click",function(){ calOffset++; renderCalendar(); });
+
+  // ---- View switching ----
+  function switchView(view){
+    document.getElementById("homeView").style.display = view==="home" ? "block" : "none";
+    document.getElementById("calendarView").style.display = view==="calendar" ? "block" : "none";
+    document.getElementById("settingsView").style.display = view==="settings" ? "block" : "none";
+    document.getElementById("navHome").classList.toggle("on", view==="home");
+    document.getElementById("navCalendar").classList.toggle("on", view==="calendar");
+    document.getElementById("navSettings").classList.toggle("on", view==="settings");
+    if(view==="calendar"){
+      renderCalendar();
+      if(!calendarVisited){ calendarVisited = true; renderChecklist(); }
+    }
+  }
+  document.getElementById("navHome").addEventListener("click",function(){ switchView("home"); });
+  document.getElementById("navCalendar").addEventListener("click",function(){ switchView("calendar"); });
+  document.getElementById("navSettings").addEventListener("click",function(){ switchView("settings"); });
+
+  // ---- Settings interactions ----
+  document.getElementById("notifSw").addEventListener("click",function(){
+    this.classList.toggle("on");
+    renderChecklist();
+  });
+  document.getElementById("supportRow").addEventListener("click",function(){
+    window.location.href = "mailto:hello@fend.app?subject=Fend support";
+  });
+
+  // ---- Onboarding hero ----
+  document.querySelectorAll(".ob-tile").forEach(function(tile){
+    tile.innerHTML = iconHTMLraw(tile.getAttribute("data-ob"));
+  });
+  function iconHTMLraw(name){
+    var b = BRANDS[norm(name)] || {};
+    var slug = b.slug || norm(name);
+    var color = b.color || null;
+    var letter = esc(((name||"?").trim().charAt(0) || "?").toUpperCase());
+    var url = "https://cdn.simpleicons.org/"+slug+(color?"/"+color:"");
+    return '<img class="logo" alt="" src="'+url+'" onerror="logoFail(this)"/><span class="fallback">'+letter+'</span>';
+  }
+  document.getElementById("obContinue").addEventListener("click",function(){
+    document.getElementById("onboardingView").style.display="none";
+  });
+
+  // ---- Filter pills ----
+  document.getElementById("pills").addEventListener("click",function(e){
+    if(e.target.classList.contains("pill")){
+      var btns=this.querySelectorAll(".pill");
+      for(var i=0;i<btns.length;i++) btns[i].classList.remove("active");
+      e.target.classList.add("active");
+      filter=e.target.getAttribute("data-filter");
+      renderList();
+      renderDueSoon();
+    }
+  });
+
+  // ---- Presets ----
+  (function(){
+    var wrap=document.getElementById("presetChips");
+    presets.forEach(function(p){
+      var b=document.createElement("button");
+      b.className="preset-card";
+      var brand = BRANDS[norm(p.name)] || {};
+      var plusColor = brand.color ? "#"+brand.color : null;
+      b.innerHTML =
+        '<div class="pc-top">'+iconHTML({name:p.name})+
+        '<div class="pc-plus"'+(plusColor?' style="background:'+plusColor+'"':'')+'>+</div></div>'+
+        '<div class="pc-name">'+esc(p.name)+'</div>'+
+        '<div class="pc-label">'+esc(p.label||"")+'</div>';
+      b.addEventListener("click",function(){
+        document.getElementById("fName").value=p.name;
+        document.getElementById("fCost").value=p.cost;
+        document.getElementById("fCat").value=p.cat;
+      });
+      wrap.appendChild(b);
+    });
+  })();
+
+  // ---- Trial toggle ----
+  var trialOn=false;
+  document.getElementById("trialToggle").addEventListener("click",function(){
+    trialOn=!trialOn;
+    document.getElementById("trialSw").classList.toggle("on",trialOn);
+    document.getElementById("trialFields").classList.toggle("show",trialOn);
+  });
+
+  // ---- Sheet open/close ----
+  function openSheet(id){
+    editingId = (typeof id==="number") ? id : null;
+    var t=document.getElementById("sheetTitle");
+    var del=document.getElementById("deleteBtn");
+    // reset
+    document.getElementById("fName").value="";
+    document.getElementById("fCost").value="";
+    document.getElementById("fCycle").value="monthly";
+    document.getElementById("fDate").value=daysFromNow(30);
+    document.getElementById("fCat").value="streaming";
+    document.getElementById("fTrialEnd").value=daysFromNow(7);
+    trialOn=false;
+    document.getElementById("trialSw").classList.remove("on");
+    document.getElementById("trialFields").classList.remove("show");
+
+    if(editingId){
+      var s=subs.filter(function(x){return x.id===editingId;})[0];
+      if(s){
+        t.textContent="Edit subscription";
+        del.style.display="block";
+        document.getElementById("fName").value=s.name;
+        document.getElementById("fCost").value=s.cost;
+        document.getElementById("fCycle").value=s.cycle;
+        document.getElementById("fDate").value=s.date;
+        document.getElementById("fCat").value=s.cat;
+        if(s.trial){
+          trialOn=true;
+          document.getElementById("trialSw").classList.add("on");
+          document.getElementById("trialFields").classList.add("show");
+          document.getElementById("fTrialEnd").value=s.trialEnd||daysFromNow(7);
+        }
+        var ct=document.getElementById("cancelToggleBtn");
+        ct.style.display="block";
+        ct.textContent = s.status==="cancelled" ? "Reactivate subscription" : "Mark as cancelled";
+      }
+    } else {
+      t.textContent="Add subscription";
+      del.style.display="none";
+      document.getElementById("cancelToggleBtn").style.display="none";
+    }
+    document.getElementById("scrim").classList.add("show");
+    document.getElementById("sheet").classList.add("show");
+  }
+  function closeSheet(){
+    document.getElementById("scrim").classList.remove("show");
+    document.getElementById("sheet").classList.remove("show");
+  }
+  document.getElementById("addBtn").addEventListener("click",function(){openSheet(null);});
+  document.getElementById("scrim").addEventListener("click",closeSheet);
+
+  // ---- Save ----
+  document.getElementById("saveBtn").addEventListener("click",function(){
+    var name=document.getElementById("fName").value.trim();
+    var cost=parseFloat(document.getElementById("fCost").value);
+    if(!name){ alert("Give it a name."); return; }
+    if(isNaN(cost)||cost<0){ alert("Enter a valid cost."); return; }
+    var cycle=document.getElementById("fCycle").value;
+    var date=document.getElementById("fDate").value||daysFromNow(30);
+    var cat=document.getElementById("fCat").value;
+    var trialEnd=document.getElementById("fTrialEnd").value;
+
+    var data={name:name,cost:cost,cycle:cycle,date:date,cat:cat,
+      trial:trialOn,trialEnd:trialOn?trialEnd:null};
+
+    if(editingId){
+      subs=subs.map(function(s){return s.id===editingId?Object.assign({},s,data):s;});
+    } else {
+      data.id=nextId++; data.status="active"; subs.push(data);
+    }
+    closeSheet(); renderAll();
+  });
+
+  // ---- Cancel / reactivate toggle ----
+  document.getElementById("cancelToggleBtn").addEventListener("click",function(){
+    if(!editingId) return;
+    subs=subs.map(function(s){
+      if(s.id!==editingId) return s;
+      return Object.assign({},s,{status:s.status==="cancelled"?"active":"cancelled"});
+    });
+    closeSheet(); renderAll();
+  });
+
+  // ---- Delete ----
+  document.getElementById("deleteBtn").addEventListener("click",function(){
+    if(editingId && confirm("Delete this subscription?")){
+      subs=subs.filter(function(s){return s.id!==editingId;});
+      closeSheet(); renderAll();
+    }
+  });
+
+  // renderAll() now runs from onAuthed() once a session is confirmed
+</script>
+</body>
+</html>
