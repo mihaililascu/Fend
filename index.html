@@ -241,10 +241,18 @@
   #onboardingView{position:fixed;inset:0;z-index:50;background:var(--bg);
     display:flex;flex-direction:column;overflow:hidden;
     padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-  .ob-collage{position:relative;flex:0 0 40vh;min-height:220px}
+  .ob-collage{position:relative;flex:0 0 48vh;min-height:260px}
   .ob-tile{position:absolute;width:64px;height:64px;border-radius:18px;background:var(--surface);
     border:1px solid var(--line);display:flex;align-items:center;justify-content:center;
-    box-shadow:0 10px 24px rgba(0,0,0,.35)}
+    box-shadow:0 10px 24px rgba(0,0,0,.35);
+    animation:obFloat 6s ease-in-out infinite;will-change:translate}
+  .ob-tile:nth-child(5n+1){animation-duration:5.6s;animation-delay:-.2s}
+  .ob-tile:nth-child(5n+2){animation-duration:7.1s;animation-delay:-1.3s}
+  .ob-tile:nth-child(5n+3){animation-duration:6.3s;animation-delay:-.7s}
+  .ob-tile:nth-child(5n+4){animation-duration:8s;animation-delay:-1.9s}
+  .ob-tile:nth-child(5n+5){animation-duration:6.8s;animation-delay:-1s}
+  @keyframes obFloat{0%,100%{translate:0 0}50%{translate:0 -12px}}
+  @media (prefers-reduced-motion:reduce){.ob-tile{animation:none}}
   .ob-tile img.logo{width:32px;height:32px;object-fit:contain}
   .ob-tile .fallback{display:none;font-size:24px;font-weight:800;color:#fff}
   .ob-content{flex:1;display:flex;flex-direction:column;justify-content:flex-end;
@@ -272,14 +280,22 @@
     </div>
   </div>
 
-  <div id="onboardingView" style="display:none">
+  <div id="onboardingView">
     <div class="ob-collage">
-      <div class="ob-tile" style="left:8%;top:6%;transform:rotate(-8deg)" data-ob="Netflix"></div>
-      <div class="ob-tile" style="left:58%;top:2%;transform:rotate(6deg)" data-ob="Spotify"></div>
-      <div class="ob-tile" style="left:78%;top:22%;transform:rotate(-5deg)" data-ob="iCloud+"></div>
-      <div class="ob-tile" style="left:4%;top:34%;transform:rotate(4deg)" data-ob="YouTube Premium"></div>
-      <div class="ob-tile" style="left:62%;top:38%;transform:rotate(-7deg)" data-ob="ChatGPT Plus"></div>
-      <div class="ob-tile" style="left:24%;top:14%;transform:rotate(9deg)" data-ob="Audible"></div>
+      <div class="ob-tile" style="left:6%;top:4%;rotate:-8deg" data-ob="Netflix"></div>
+      <div class="ob-tile" style="left:60%;top:3%;rotate:6deg" data-ob="Spotify"></div>
+      <div class="ob-tile" style="left:33%;top:9%;rotate:-4deg" data-ob="Disney+"></div>
+      <div class="ob-tile" style="left:79%;top:14%;rotate:7deg" data-ob="Prime Video"></div>
+      <div class="ob-tile" style="left:3%;top:26%;rotate:5deg" data-ob="YouTube Premium"></div>
+      <div class="ob-tile" style="left:46%;top:22%;rotate:-6deg" data-ob="Apple TV+"></div>
+      <div class="ob-tile" style="left:70%;top:33%;rotate:8deg" data-ob="HBO Max"></div>
+      <div class="ob-tile" style="left:19%;top:33%;rotate:-9deg" data-ob="iCloud+"></div>
+      <div class="ob-tile" style="left:52%;top:43%;rotate:4deg" data-ob="Audible"></div>
+      <div class="ob-tile" style="left:81%;top:53%;rotate:-5deg" data-ob="Paramount+"></div>
+      <div class="ob-tile" style="left:7%;top:51%;rotate:7deg" data-ob="Twitch"></div>
+      <div class="ob-tile" style="left:33%;top:59%;rotate:-7deg" data-ob="Canva"></div>
+      <div class="ob-tile" style="left:62%;top:63%;rotate:5deg" data-ob="Adobe"></div>
+      <div class="ob-tile" style="left:15%;top:73%;rotate:-6deg" data-ob="ChatGPT Plus"></div>
     </div>
     <div class="ob-content">
       <h1 class="ob-headline">Every subscription.<br><span>One shock number.</span></h1>
@@ -428,9 +444,7 @@
       <select id="fCat">
         <option value="streaming">Streaming</option>
         <option value="software">Software</option>
-        <option value="electricity">Electricity</option>
-        <option value="gas">Gas</option>
-        <option value="bill">Bill (broadband, insurance, phone)</option>
+        <option value="bill">Bill (energy, broadband, insurance, phone)</option>
         <option value="other">Other</option>
       </select>
     </div>
@@ -530,7 +544,6 @@
     sb.from("subscriptions").select("*").order("renewal_date",{ascending:true}).then(function(res){
       if(res.error){ alert("Couldn't load your subscriptions: "+res.error.message); return; }
       subs = res.data.map(fromRow);
-      document.getElementById("onboardingView").style.display = subs.length===0 ? "flex" : "none";
       renderAll();
     });
   }
@@ -581,7 +594,7 @@
     } else {
       items = items.filter(function(s){return s.status!=="cancelled";});
       if(filter==="trial") items = items.filter(function(s){return s.trial;});
-      if(filter==="bill") items = items.filter(function(s){return s.cat==="bill"||s.cat==="electricity"||s.cat==="gas";});
+      if(filter==="bill") items = items.filter(function(s){return s.cat==="bill";});
     }
     items.sort(function(a,b){
       var da = a.trial ? daysUntil(a.trialEnd) : daysUntil(a.date);
@@ -639,15 +652,11 @@
   // where the official color is black/near-black and would vanish on the dark tile.
   // Disney+ is deliberately absent: simple-icons has no icon for it (maintainers
   // declined to add one), so it correctly falls through to the letter tile.
-  // ---- Custom logos (brands not on Simple Icons; inlined so they need no hosting) ----
-  var YUNO_LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMzNEQ4QzYiLz48c3RvcCBvZmZzZXQ9IjAuNTUiIHN0b3AtY29sb3I9IiM0QkE2RTgiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM2RTY2RTkiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI1MCIgZmlsbD0idXJsKCNnKSIvPjxwYXRoIGQ9Ik0zMyAzMyBMNTAgNjEiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxMSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIi8+PHBhdGggZD0iTTY3IDMzIEw0MSA4NSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjExIiBzdHJva2UtbGluZWNhcD0icm91bmQiIGZpbGw9Im5vbmUiLz48L3N2Zz4K";
-  var CUSTOM_LOGOS = {
-    yuno:YUNO_LOGO, yunoenergy:YUNO_LOGO, yunoelectricity:YUNO_LOGO, yunogas:YUNO_LOGO
-  };
-
   var BRANDS = {
     netflix:{slug:"netflix"},
     spotify:{slug:"spotify"},
+    disney:{slug:"disneyplus"}, disneyplus:{slug:"disneyplus"},
+    paramount:{slug:"paramountplus"}, paramountplus:{slug:"paramountplus"},
     amazonprime:{slug:"amazonprime"}, primevideo:{slug:"amazonprime"}, prime:{slug:"amazonprime"},
     youtube:{slug:"youtube"}, youtubepremium:{slug:"youtube"},
     chatgpt:{slug:"openai",color:"FFFFFF"}, chatgptplus:{slug:"openai",color:"FFFFFF"}, openai:{slug:"openai",color:"FFFFFF"},
@@ -670,32 +679,11 @@
     slack:{slug:"slack"}
   };
 
-  // Try the full name first, then the first word (so "Yuno Electricity" still matches "yuno").
-  function brandKeys(name){
-    var full = norm(name);
-    var first = norm((name||"").trim().split(/\s+/)[0]);
-    return (first && first!==full) ? [full, first] : [full];
-  }
-  function customLogo(name){
-    var keys = brandKeys(name);
-    for(var i=0;i<keys.length;i++){ if(CUSTOM_LOGOS[keys[i]]) return CUSTOM_LOGOS[keys[i]]; }
-    return null;
-  }
-  function brandFor(name){
-    var keys = brandKeys(name);
-    for(var i=0;i<keys.length;i++){ if(BRANDS[keys[i]]) return BRANDS[keys[i]]; }
-    return {};
-  }
   function iconHTML(s){
-    var letter = esc(((s.name||"?").trim().charAt(0) || "?").toUpperCase());
-    var custom = customLogo(s.name);
-    if(custom){
-      return '<div class="icon"><img class="logo" alt="" src="'+custom+'" onerror="logoFail(this)"/>'+
-        '<span class="fallback">'+letter+'</span></div>';
-    }
-    var b = brandFor(s.name);
+    var b = BRANDS[norm(s.name)] || {};
     var slug = b.slug || norm(s.name);
     var color = b.color || null;
+    var letter = esc(((s.name||"?").trim().charAt(0) || "?").toUpperCase());
     if(!slug){
       return '<div class="icon"><span class="fallback" style="display:flex">'+letter+'</span></div>';
     }
@@ -869,14 +857,10 @@
     tile.innerHTML = iconHTMLraw(tile.getAttribute("data-ob"));
   });
   function iconHTMLraw(name){
-    var letter = esc(((name||"?").trim().charAt(0) || "?").toUpperCase());
-    var custom = customLogo(name);
-    if(custom){
-      return '<img class="logo" alt="" src="'+custom+'" onerror="logoFail(this)"/><span class="fallback">'+letter+'</span>';
-    }
-    var b = brandFor(name);
+    var b = BRANDS[norm(name)] || {};
     var slug = b.slug || norm(name);
     var color = b.color || null;
+    var letter = esc(((name||"?").trim().charAt(0) || "?").toUpperCase());
     var url = "https://cdn.simpleicons.org/"+slug+(color?"/"+color:"");
     return '<img class="logo" alt="" src="'+url+'" onerror="logoFail(this)"/><span class="fallback">'+letter+'</span>';
   }
