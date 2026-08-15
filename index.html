@@ -688,11 +688,31 @@
     slack:{slug:"slack"}
   };
 
+  // Real brand icons via each service's own favicon (covers brands Simple Icons dropped)
+  var LOGO_DOMAINS = {
+    netflix:"netflix.com", spotify:"spotify.com", disney:"disneyplus.com",
+    primevideo:"primevideo.com", amazonprime:"amazon.com", youtubepremium:"youtube.com",
+    appletv:"tv.apple.com", hbomax:"max.com", icloud:"icloud.com", audible:"audible.com",
+    paramount:"paramountplus.com", twitch:"twitch.tv", canva:"canva.com", adobe:"adobe.com",
+    chatgptplus:"chatgpt.com", hulu:"hulu.com", dropbox:"dropbox.com", slack:"slack.com",
+    playstation:"playstation.com", notion:"notion.so", nintendo:"nintendo.com",
+    xbox:"xbox.com", peacock:"peacocktv.com"
+  };
+  function faviconURL(name){
+    var d = LOGO_DOMAINS[norm(name)];
+    return d ? "https://www.google.com/s2/favicons?domain="+d+"&sz=128" : null;
+  }
   function iconHTML(s){
-    var b = BRANDS[norm(s.name)] || {};
-    var slug = b.slug || norm(s.name);
+    var name = s.name;
+    var letter = esc(((name||"?").trim().charAt(0) || "?").toUpperCase());
+    var fav = faviconURL(name);
+    if(fav){
+      return '<div class="icon"><img class="logo" alt="" src="'+fav+'" onerror="logoFail(this)"/>'+
+        '<span class="fallback">'+letter+'</span></div>';
+    }
+    var b = BRANDS[norm(name)] || {};
+    var slug = b.slug || norm(name);
     var color = b.color || null;
-    var letter = esc(((s.name||"?").trim().charAt(0) || "?").toUpperCase());
     if(!slug){
       return '<div class="icon"><span class="fallback" style="display:flex">'+letter+'</span></div>';
     }
@@ -861,22 +881,12 @@
     window.location.href = "mailto:hello@fend.app?subject=Fend support";
   });
 
-  // ---- Onboarding hero (real brand icons via each service's own favicon) ----
-  var OB_DOMAINS = {
-    netflix:"netflix.com", spotify:"spotify.com", disney:"disneyplus.com",
-    primevideo:"primevideo.com", youtubepremium:"youtube.com", appletv:"tv.apple.com",
-    hbomax:"max.com", icloud:"icloud.com", audible:"audible.com",
-    paramount:"paramountplus.com", twitch:"twitch.tv", canva:"canva.com",
-    adobe:"adobe.com", chatgptplus:"chatgpt.com", hulu:"hulu.com",
-    dropbox:"dropbox.com", slack:"slack.com", playstation:"playstation.com",
-    notion:"notion.so", nintendo:"nintendo.com", xbox:"xbox.com", peacock:"peacocktv.com"
-  };
+  // ---- Onboarding hero (uses the shared favicon resolver) ----
   function obIcon(name){
     var letter = esc(((name||"?").trim().charAt(0) || "?").toUpperCase());
-    var d = OB_DOMAINS[norm(name)];
-    if(!d){ return '<span class="fallback" style="display:flex">'+letter+'</span>'; }
-    var url = "https://www.google.com/s2/favicons?domain="+d+"&sz=128";
-    return '<img class="logo" alt="" src="'+url+'" onerror="logoFail(this)"/><span class="fallback">'+letter+'</span>';
+    var fav = faviconURL(name);
+    if(!fav){ return '<span class="fallback" style="display:flex">'+letter+'</span>'; }
+    return '<img class="logo" alt="" src="'+fav+'" onerror="logoFail(this)"/><span class="fallback">'+letter+'</span>';
   }
   document.querySelectorAll(".ob-tile").forEach(function(tile){
     tile.innerHTML = obIcon(tile.getAttribute("data-ob"));
