@@ -70,6 +70,8 @@
     display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden}
   .icon img.logo{width:26px;height:26px;object-fit:contain;display:block}
   .icon .fallback{display:none;font-size:20px;font-weight:800;color:#fff}
+  .icon .init{display:flex;align-items:center;justify-content:center;width:100%;height:100%;
+    font-weight:800;font-size:14px;letter-spacing:.01em}
   .card .mid{flex:1;min-width:0}
   .card .name{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis}
@@ -453,7 +455,14 @@
       <select id="fCat">
         <option value="streaming">Streaming</option>
         <option value="software">Software</option>
-        <option value="bill">Bill (energy, broadband, insurance, phone)</option>
+        <option value="electricity">Electricity</option>
+        <option value="gas">Gas</option>
+        <option value="energy">Electricity &amp; Gas</option>
+        <option value="broadband">Broadband</option>
+        <option value="mobile">Mobile &amp; phone</option>
+        <option value="insurance_car">Car insurance</option>
+        <option value="insurance_home">Home insurance</option>
+        <option value="mortgage">Mortgage</option>
         <option value="other">Other</option>
       </select>
     </div>
@@ -563,41 +572,82 @@
   var editingId = null;
 
   var presets = [
-    {name:"Netflix",cost:15.99,cat:"streaming",label:"Video on demand"},
-    {name:"Disney+",cost:9.99,cat:"streaming",label:"Video on demand"},
-    {name:"Amazon Prime",cost:8.99,cat:"streaming",label:"Shopping & video"},
-    {name:"YouTube Premium",cost:12.99,cat:"streaming",label:"Video, ad-free"},
-    {name:"Apple TV+",cost:9.99,cat:"streaming",label:"Video on demand"},
-    {name:"HBO Max",cost:9.99,cat:"streaming",label:"Video on demand"},
-    {name:"Paramount+",cost:7.99,cat:"streaming",label:"Video on demand"},
-    {name:"Hulu",cost:17.99,cat:"streaming",label:"Video on demand"},
-    {name:"Peacock",cost:7.99,cat:"streaming",label:"Video on demand"},
-    {name:"Crunchyroll",cost:6.49,cat:"streaming",label:"Anime"},
-    {name:"NOW",cost:9.99,cat:"streaming",label:"Video on demand"},
-    {name:"BritBox",cost:5.99,cat:"streaming",label:"British TV"},
-    {name:"DAZN",cost:19.99,cat:"streaming",label:"Live sport"},
-    {name:"Spotify",cost:11.99,cat:"streaming",label:"Music"},
-    {name:"Apple Music",cost:10.99,cat:"streaming",label:"Music"},
-    {name:"Tidal",cost:10.99,cat:"streaming",label:"Music"},
-    {name:"Deezer",cost:11.99,cat:"streaming",label:"Music"},
-    {name:"Audible",cost:7.99,cat:"streaming",label:"Audiobooks"},
-    {name:"iCloud+",cost:2.99,cat:"software",label:"Cloud storage"},
-    {name:"Google One",cost:1.99,cat:"software",label:"Cloud storage"},
-    {name:"Dropbox",cost:9.99,cat:"software",label:"Cloud storage"},
-    {name:"Microsoft 365",cost:7.99,cat:"software",label:"Office apps"},
-    {name:"Notion",cost:9.99,cat:"software",label:"Notes & docs"},
-    {name:"Adobe",cost:19.99,cat:"software",label:"Creative Cloud"},
-    {name:"Canva",cost:12.99,cat:"software",label:"Design"},
-    {name:"ChatGPT Plus",cost:23,cat:"software",label:"AI assistant"},
-    {name:"Grammarly",cost:12,cat:"software",label:"Writing"},
-    {name:"NordVPN",cost:11.99,cat:"software",label:"VPN"},
-    {name:"LinkedIn Premium",cost:29.99,cat:"software",label:"Networking"},
-    {name:"PlayStation Plus",cost:13.99,cat:"other",label:"Gaming"},
-    {name:"Xbox Game Pass",cost:12.99,cat:"other",label:"Gaming"},
-    {name:"Nintendo Online",cost:3.99,cat:"other",label:"Gaming"},
-    {name:"Twitch",cost:8.99,cat:"other",label:"Streaming"},
-    {name:"Discord Nitro",cost:9.99,cat:"other",label:"Chat"},
-    {name:"Duolingo",cost:12.99,cat:"other",label:"Language"}
+    // ---- Ireland: energy ----
+    {name:"Electric Ireland",cost:0,cat:"electricity",region:"ie",label:"Electricity"},
+    {name:"Bord Gais Energy",cost:0,cat:"energy",region:"ie",label:"Electricity & gas"},
+    {name:"SSE Airtricity",cost:0,cat:"energy",region:"ie",label:"Electricity & gas"},
+    {name:"Energia",cost:0,cat:"energy",region:"ie",label:"Electricity & gas"},
+    {name:"Flogas",cost:0,cat:"gas",region:"ie",label:"Gas"},
+    {name:"Pinergy",cost:0,cat:"electricity",region:"ie",label:"Electricity"},
+    {name:"Prepay Power",cost:0,cat:"electricity",region:"ie",label:"Pay-as-you-go"},
+    {name:"Community Power",cost:0,cat:"electricity",region:"ie",label:"Green electricity"},
+    {name:"EcoPower Supply",cost:0,cat:"electricity",region:"ie",label:"Green electricity"},
+    {name:"WaterPower",cost:0,cat:"electricity",region:"ie",label:"Electricity"},
+    {name:"Yuno Energy",cost:0,cat:"energy",region:"ie",label:"Electricity & gas"},
+    // ---- Ireland: broadband & mobile ----
+    {name:"Eir",cost:0,cat:"broadband",region:"ie",label:"Broadband & mobile"},
+    {name:"Virgin Media",cost:0,cat:"broadband",region:"ie",label:"Broadband & TV"},
+    {name:"Sky Ireland",cost:0,cat:"broadband",region:"ie",label:"Broadband & TV"},
+    {name:"Vodafone",cost:0,cat:"mobile",region:"ie",label:"Mobile & broadband"},
+    {name:"Three",cost:0,cat:"mobile",region:"ie",label:"Mobile"},
+    {name:"GoMo",cost:0,cat:"mobile",region:"ie",label:"Mobile"},
+    {name:"Tesco Mobile",cost:0,cat:"mobile",region:"ie",label:"Mobile"},
+    {name:"48",cost:0,cat:"mobile",region:"ie",label:"Mobile"},
+    {name:"An Post Mobile",cost:0,cat:"mobile",region:"ie",label:"Mobile"},
+    {name:"Pure Telecom",cost:0,cat:"broadband",region:"ie",label:"Broadband"},
+    {name:"Digiweb",cost:0,cat:"broadband",region:"ie",label:"Broadband"},
+    // ---- Ireland: insurance ----
+    {name:"Axa",cost:0,cat:"insurance_car",region:"ie",label:"Car & home"},
+    {name:"Aviva",cost:0,cat:"insurance_car",region:"ie",label:"Car & home"},
+    {name:"Zurich",cost:0,cat:"insurance_car",region:"ie",label:"Car & home"},
+    {name:"Liberty Insurance",cost:0,cat:"insurance_car",region:"ie",label:"Car & home"},
+    {name:"FBD Insurance",cost:0,cat:"insurance_car",region:"ie",label:"Car & home"},
+    {name:"123.ie",cost:0,cat:"insurance_car",region:"ie",label:"Car & home"},
+    {name:"Allianz",cost:0,cat:"insurance_home",region:"ie",label:"Home & car"},
+    {name:"An Post Insurance",cost:0,cat:"insurance_home",region:"ie",label:"Home & car"},
+    {name:"RSA Insurance",cost:0,cat:"insurance_home",region:"ie",label:"Home & car"},
+    // ---- Ireland: mortgage ----
+    {name:"AIB Mortgage",cost:0,cat:"mortgage",region:"ie",label:"Mortgage"},
+    {name:"Bank of Ireland",cost:0,cat:"mortgage",region:"ie",label:"Mortgage"},
+    {name:"Permanent TSB",cost:0,cat:"mortgage",region:"ie",label:"Mortgage"},
+    {name:"Avant Money",cost:0,cat:"mortgage",region:"ie",label:"Mortgage"},
+    {name:"Haven Mortgages",cost:0,cat:"mortgage",region:"ie",label:"Mortgage"},
+    {name:"EBS Mortgage",cost:0,cat:"mortgage",region:"ie",label:"Mortgage"},
+    {name:"ICS Mortgages",cost:0,cat:"mortgage",region:"ie",label:"Mortgage"},
+    {name:"Finance Ireland",cost:0,cat:"mortgage",region:"ie",label:"Mortgage"},
+    // ---- Ireland: other recurring ----
+    {name:"TV Licence",cost:0,cat:"other",region:"ie",label:"Annual"},
+    {name:"Panda Waste",cost:0,cat:"other",region:"ie",label:"Bin collection"},
+    {name:"Greyhound Recycling",cost:0,cat:"other",region:"ie",label:"Bin collection"},
+    // ---- Global: streaming & music ----
+    {name:"Netflix",cost:15.99,cat:"streaming",region:"global",label:"Video on demand"},
+    {name:"Disney+",cost:9.99,cat:"streaming",region:"global",label:"Video on demand"},
+    {name:"Amazon Prime",cost:8.99,cat:"streaming",region:"global",label:"Shopping & video"},
+    {name:"YouTube Premium",cost:12.99,cat:"streaming",region:"global",label:"Video, ad-free"},
+    {name:"Apple TV+",cost:9.99,cat:"streaming",region:"global",label:"Video on demand"},
+    {name:"HBO Max",cost:9.99,cat:"streaming",region:"global",label:"Video on demand"},
+    {name:"Paramount+",cost:7.99,cat:"streaming",region:"global",label:"Video on demand"},
+    {name:"NOW",cost:9.99,cat:"streaming",region:"global",label:"Video on demand"},
+    {name:"Crunchyroll",cost:6.49,cat:"streaming",region:"global",label:"Anime"},
+    {name:"DAZN",cost:19.99,cat:"streaming",region:"global",label:"Live sport"},
+    {name:"Spotify",cost:11.99,cat:"streaming",region:"global",label:"Music"},
+    {name:"Apple Music",cost:10.99,cat:"streaming",region:"global",label:"Music"},
+    {name:"Tidal",cost:10.99,cat:"streaming",region:"global",label:"Music"},
+    {name:"Deezer",cost:11.99,cat:"streaming",region:"global",label:"Music"},
+    {name:"Audible",cost:7.99,cat:"streaming",region:"global",label:"Audiobooks"},
+    // ---- Global: software & gaming ----
+    {name:"iCloud+",cost:2.99,cat:"software",region:"global",label:"Cloud storage"},
+    {name:"Google One",cost:1.99,cat:"software",region:"global",label:"Cloud storage"},
+    {name:"Dropbox",cost:9.99,cat:"software",region:"global",label:"Cloud storage"},
+    {name:"Microsoft 365",cost:7.99,cat:"software",region:"global",label:"Office apps"},
+    {name:"Notion",cost:9.99,cat:"software",region:"global",label:"Notes & docs"},
+    {name:"Adobe",cost:19.99,cat:"software",region:"global",label:"Creative Cloud"},
+    {name:"Canva",cost:12.99,cat:"software",region:"global",label:"Design"},
+    {name:"ChatGPT Plus",cost:23,cat:"software",region:"global",label:"AI assistant"},
+    {name:"NordVPN",cost:11.99,cat:"software",region:"global",label:"VPN"},
+    {name:"PlayStation Plus",cost:13.99,cat:"other",region:"global",label:"Gaming"},
+    {name:"Xbox Game Pass",cost:12.99,cat:"other",region:"global",label:"Gaming"},
+    {name:"Nintendo Online",cost:3.99,cat:"other",region:"global",label:"Gaming"}
   ];
 
   // ---- Helpers ----
@@ -631,7 +681,7 @@
     } else {
       items = items.filter(function(s){return s.status!=="cancelled";});
       if(filter==="trial") items = items.filter(function(s){return s.trial;});
-      if(filter==="bill") items = items.filter(function(s){return s.cat==="bill";});
+      if(filter==="bill") items = items.filter(function(s){return ["bill","electricity","gas","energy","broadband","mobile","insurance_car","insurance_home","mortgage"].indexOf(s.cat)>=0;});
     }
     items.sort(function(a,b){
       var da = a.trial ? daysUntil(a.trialEnd) : daysUntil(a.date);
@@ -735,6 +785,33 @@
     var d = LOGO_DOMAINS[norm(name)];
     return d ? "https://www.google.com/s2/favicons?domain="+d+"&sz=128" : null;
   }
+  // Irish suppliers (and others without a clean logo): show a coloured initials tile
+  // instead of a blurry favicon. key -> { init, color }
+  var BRAND_INIT = {
+    electricireland:{init:"EI",color:"#00a3d9"}, bordgaisenergy:{init:"BG",color:"#12a3c4"},
+    sseairtricity:{init:"SSE",color:"#4aae32"}, energia:{init:"EN",color:"#b02f8f"},
+    flogas:{init:"FG",color:"#17a6c9"}, pinergy:{init:"PY",color:"#e2231a"},
+    prepaypower:{init:"PP",color:"#e5006e"}, communitypower:{init:"CP",color:"#6cbe45"},
+    ecopowersupply:{init:"EP",color:"#4fae57"}, waterpower:{init:"WP",color:"#12b3b3"},
+    yunoenergy:{init:"YU",color:"#2fb6c9"},
+    eir:{init:"EIR",color:"#7d3fb0"}, virginmedia:{init:"VM",color:"#e10a0a"},
+    skyireland:{init:"SKY",color:"#2a8cff"}, vodafone:{init:"VF",color:"#e60000"},
+    three:{init:"3",color:"#b0b0b8"}, puretelecom:{init:"PT",color:"#3aa935"},
+    digiweb:{init:"DW",color:"#2a7de1"}, gomo:{init:"GO",color:"#00c2b2"},
+    tescomobile:{init:"TM",color:"#3a86d6"}, "48":{init:"48",color:"#b0b0b8"},
+    anpostmobile:{init:"AP",color:"#1f9c5a"},
+    axa:{init:"AXA",color:"#3a6bd6"}, aviva:{init:"AV",color:"#ffd21e"},
+    allianz:{init:"AZ",color:"#4a78d6"}, zurich:{init:"ZU",color:"#4a6bd6"},
+    libertyinsurance:{init:"LB",color:"#ffcf2e"}, fbdinsurance:{init:"FBD",color:"#2f86c4"},
+    "123ie":{init:"123",color:"#2a7de1"}, anpostinsurance:{init:"AP",color:"#1f9c5a"},
+    rsainsurance:{init:"RSA",color:"#4a5fd6"},
+    aibmortgage:{init:"AIB",color:"#16a34a"}, bankofireland:{init:"BOI",color:"#3a5da0"},
+    permanenttsb:{init:"PTSB",color:"#e2001a"}, avantmoney:{init:"AM",color:"#7d4fb0"},
+    havenmortgages:{init:"HV",color:"#1f9c5a"}, ebsmortgage:{init:"EBS",color:"#e2334a"},
+    icsmortgages:{init:"ICS",color:"#2a7de1"}, financeireland:{init:"FI",color:"#4a6bd6"},
+    tvlicence:{init:"TV",color:"#1f9c5a"}, pandawaste:{init:"PA",color:"#3aa935"},
+    greyhoundrecycling:{init:"GH",color:"#2a7de1"}
+  };
   function iconHTML(s){
     var name = s.name;
     var letter = esc(((name||"?").trim().charAt(0) || "?").toUpperCase());
@@ -742,6 +819,10 @@
     if(fav){
       return '<div class="icon"><img class="logo" alt="" src="'+fav+'" onerror="logoFail(this)"/>'+
         '<span class="fallback">'+letter+'</span></div>';
+    }
+    var bi = BRAND_INIT[norm(name)];
+    if(bi){
+      return '<div class="icon"><span class="init" style="color:'+bi.color+'">'+esc(bi.init)+'</span></div>';
     }
     var b = BRANDS[norm(name)] || {};
     var slug = b.slug || norm(name);
@@ -949,13 +1030,16 @@
   });
 
   // ---- Presets ----
+  var REGION = "ie"; // region-ready: shows this region + global. Selector comes later.
   (function(){
     var wrap=document.getElementById("presetChips");
-    presets.forEach(function(p){
+    presets.filter(function(p){ return !p.region || p.region==="global" || p.region===REGION; })
+    .forEach(function(p){
       var b=document.createElement("button");
       b.className="preset-card";
       var brand = BRANDS[norm(p.name)] || {};
-      var plusColor = brand.color ? "#"+brand.color : null;
+      var bi = BRAND_INIT[norm(p.name)] || {};
+      var plusColor = brand.color ? "#"+brand.color : (bi.color || null);
       b.innerHTML =
         '<div class="pc-top">'+iconHTML({name:p.name})+
         '<div class="pc-plus"'+(plusColor?' style="background:'+plusColor+'"':'')+'>+</div></div>'+
