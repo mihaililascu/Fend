@@ -380,29 +380,36 @@
             <circle cx="1.5" cy="1.3" r="1.15" fill="none" stroke="#3d4658" stroke-width=".55"/>
             <circle cx="4.5" cy="3.9" r="1.15" fill="none" stroke="#3d4658" stroke-width=".55"/>
           </pattern>
-          <radialGradient id="halo" cx="50%" cy="48%" r="50%">
-            <stop offset="0" stop-color="#f6d97a" stop-opacity=".5"/>
-            <stop offset="55%" stop-color="#d4af37" stop-opacity=".16"/>
+          <radialGradient id="halo" cx="50%" cy="46%" r="50%">
+            <stop offset="0" stop-color="#f8e59c" stop-opacity=".55"/>
+            <stop offset="42%" stop-color="#d4af37" stop-opacity=".22"/>
+            <stop offset="72%" stop-color="#d4af37" stop-opacity=".07"/>
             <stop offset="100%" stop-color="#d4af37" stop-opacity="0"/>
           </radialGradient>
-          <linearGradient id="rayFade" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stop-color="#f8e59c" stop-opacity=".85"/>
-            <stop offset="100%" stop-color="#f8e59c" stop-opacity="0"/>
-          </linearGradient>
+          <radialGradient id="sideGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0" stop-color="#ffeeb0" stop-opacity=".75"/>
+            <stop offset="100%" stop-color="#ffeeb0" stop-opacity="0"/>
+          </radialGradient>
         </defs>
-        <!-- light rays -->
-        <g opacity=".85">
-          <circle cx="50" cy="56" r="54" fill="url(#halo)"/>
-          <g stroke="url(#rayFade)" stroke-linecap="round">
-            <line x1="50" y1="56" x2="4" y2="30" stroke-width="2.6"/>
-            <line x1="50" y1="56" x2="96" y2="30" stroke-width="2.6"/>
-            <line x1="50" y1="56" x2="0" y2="56" stroke-width="1.8"/>
-            <line x1="50" y1="56" x2="100" y2="56" stroke-width="1.8"/>
-            <line x1="50" y1="56" x2="10" y2="86" stroke-width="1.5"/>
-            <line x1="50" y1="56" x2="90" y2="86" stroke-width="1.5"/>
-            <line x1="50" y1="56" x2="50" y2="0" stroke-width="1.5"/>
-            <line x1="50" y1="56" x2="24" y2="6" stroke-width="1.2"/>
-            <line x1="50" y1="56" x2="76" y2="6" stroke-width="1.2"/>
+        <!-- soft light bleeding from behind + bokeh -->
+        <g>
+          <ellipse cx="50" cy="52" rx="58" ry="46" fill="url(#halo)"/>
+          <ellipse cx="14" cy="46" rx="17" ry="9" fill="url(#sideGlow)" opacity=".8"/>
+          <ellipse cx="87" cy="44" rx="18" ry="10" fill="url(#sideGlow)" opacity=".85"/>
+          <ellipse cx="50" cy="10" rx="22" ry="8" fill="url(#sideGlow)" opacity=".5"/>
+          <g fill="#f8e59c">
+            <circle cx="12" cy="26" r="3.4" opacity=".16"/>
+            <circle cx="90" cy="22" r="4" opacity=".18"/>
+            <circle cx="6" cy="62" r="5" opacity=".13"/>
+            <circle cx="95" cy="66" r="4.4" opacity=".15"/>
+            <circle cx="20" cy="88" r="3" opacity=".12"/>
+            <circle cx="82" cy="92" r="2.6" opacity=".13"/>
+            <circle cx="30" cy="12" r="1.6" opacity=".3"/>
+            <circle cx="70" cy="16" r="1.3" opacity=".28"/>
+            <circle cx="8" cy="40" r="1.2" opacity=".3"/>
+            <circle cx="93" cy="52" r="1.4" opacity=".3"/>
+            <circle cx="16" cy="72" r="1.2" opacity=".26"/>
+            <circle cx="86" cy="78" r="1.5" opacity=".26"/>
           </g>
         </g>
         <path d="M50 4 L94 20 L94 58 C94 84 74 102 50 112 C26 102 6 84 6 58 L6 20 Z"
@@ -411,6 +418,12 @@
           fill="url(#innerFace)"/>
         <path d="M50 15 L84 27 L84 57 C84 78 68 92 50 100 C32 92 16 78 16 57 L16 27 Z"
           fill="url(#mesh)" opacity=".85"/>
+        <!-- backlit edge hotspots -->
+        <g fill="#fff8dc">
+          <ellipse cx="10" cy="43" rx="4.5" ry="7" opacity=".55"/>
+          <ellipse cx="90" cy="40" rx="4" ry="8" opacity=".6"/>
+          <ellipse cx="50" cy="6" rx="9" ry="2.6" opacity=".45"/>
+        </g>
       </svg>
     </div>
     <button class="gopro">Go Pro ✦</button>
