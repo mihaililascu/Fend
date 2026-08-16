@@ -74,6 +74,25 @@
     font-weight:800;font-size:14px;letter-spacing:.01em}
   .icon > .init:only-child{display:flex}
   .icon .fallback.init{font-size:14px}
+  /* Bill check */
+  #billCheckCard{background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    padding:16px 16px 12px;margin:0 0 14px}
+  .bc-head{margin-bottom:10px}
+  .bc-title{display:block;font-weight:800;font-size:15px}
+  .bc-sub{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .bc-row{display:flex;align-items:center;gap:10px;padding:9px 0;
+    border-top:1px solid var(--line);flex-wrap:wrap}
+  .bc-name{flex:1;min-width:110px;font-weight:600;font-size:14px}
+  .bc-cat{display:block;color:var(--muted);font-weight:400;font-size:11px}
+  .bc-nums{text-align:right;font-size:13px;white-space:nowrap}
+  .bc-mine{font-weight:700}
+  .bc-vs{display:block;color:var(--muted);font-size:11px}
+  .bc-flag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .bc-over{background:rgba(255,107,107,.14);color:#ff8a8a}
+  .bc-under{background:rgba(16,185,129,.14);color:#34d399}
+  .bc-near{background:rgba(148,163,184,.14);color:#a8b3c2}
+  .bc-note{color:var(--muted);font-size:10.5px;line-height:1.45;margin-top:10px;
+    padding-top:9px;border-top:1px solid var(--line)}
   .card .mid{flex:1;min-width:0}
   .card .name{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis}
@@ -333,6 +352,7 @@
     <div id="checklistCard" style="display:none"></div>
 
     <div id="dueSoonCard" style="display:none"></div>
+    <div id="billCheckCard" style="display:none"></div>
 
     <div class="pills" id="pills">
       <button class="pill active" data-filter="all">All</button>
@@ -711,6 +731,18 @@
     document.getElementById("heroCount").textContent = activeSubs.length;
   }
 
+  // ---- Bill check (information only — not advice, no switching) ----
+  // Irish national averages, 2026. Electricity based on CRU typical 4,200 kWh/yr.
+  var BENCHMARKS = {
+    electricity:{avg:150, label:"electricity"},
+    gas:{avg:119, label:"gas"},
+    energy:{avg:269, label:"electricity & gas"},
+    broadband:{avg:45, label:"broadband"},
+    mobile:{avg:20, label:"mobile"}
+  };
+  var BENCH_NOTE = "Irish averages, 2026. Electricity €1,805/yr and gas €1,429/yr "+
+    "based on typical usage (CRU). Your usage, tariff and discounts will differ.";
+
   function renderList(){
     var el = document.getElementById("list");
     var items = subs.slice();
@@ -767,6 +799,38 @@
       });
     }
   }
+  function renderBillCheck(){
+    var card = document.getElementById("billCheckCard");
+    if(!card) return;
+    var rows = subs.filter(function(s){
+      return s.status!=="cancelled" && BENCHMARKS[s.cat];
+    });
+    if(rows.length===0){ card.style.display="none"; return; }
+
+    var html = '<div class="bc-head"><span class="bc-title">Bill check</span>'+
+      '<span class="bc-sub">How yours compare to the Irish average</span></div>';
+    rows.forEach(function(s){
+      var b = BENCHMARKS[s.cat];
+      var m = monthlyCost(s);
+      var diff = m - b.avg;
+      var pct = b.avg ? Math.round((diff/b.avg)*100) : 0;
+      var over = diff > 0;
+      var near = Math.abs(pct) <= 10;
+      var cls = near ? "bc-near" : (over ? "bc-over" : "bc-under");
+      var msg = near
+        ? "about average"
+        : (over ? Math.abs(pct)+"% above average" : Math.abs(pct)+"% below average");
+      html += '<div class="bc-row">'+
+        '<div class="bc-name">'+esc(s.name)+'<span class="bc-cat">'+esc(b.label)+'</span></div>'+
+        '<div class="bc-nums"><span class="bc-mine">'+money(m)+'/mo</span>'+
+        '<span class="bc-vs">vs '+money(b.avg)+'</span></div>'+
+        '<div class="bc-flag '+cls+'">'+msg+'</div></div>';
+    });
+    html += '<div class="bc-note">'+BENCH_NOTE+'</div>';
+    card.innerHTML = html;
+    card.style.display = "block";
+  }
+
 
   function esc(t){var d=document.createElement("div");d.textContent=t;return d.innerHTML;}
 
@@ -993,7 +1057,7 @@
     card.innerHTML = html+'</div>';
   }
 
-  function renderAll(){ renderHero(); renderList(); renderDueSoon(); renderChecklist(); }
+  function renderAll(){ renderHero(); renderList(); renderDueSoon(); renderBillCheck(); renderChecklist(); }
 
   // ---- Calendar ----
   var calOffset = 0; // months from current month
