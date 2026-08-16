@@ -435,7 +435,9 @@
         <option value="mobile">Mobile &amp; phone</option>
         <option value="insurance_car">Car insurance</option>
         <option value="insurance_home">Home insurance</option>
+        <option value="insurance_health">Health insurance</option>
         <option value="mortgage">Mortgage</option>
+        <option value="waste">Bins &amp; waste</option>
         <option value="other">Other</option>
       </select>
     </div>
@@ -586,6 +588,40 @@
     {name:"EcoPower Supply",cost:0,cat:"electricity",region:"ie",label:"Green electricity"},
     {name:"WaterPower",cost:0,cat:"electricity",region:"ie",label:"Electricity"},
     {name:"Yuno Energy",cost:0,cat:"energy",region:"ie",label:"Electricity & gas"},
+    {name:"Go Power",cost:0,cat:"electricity",region:"ie",label:"Electricity"},
+    // ---- Ireland: broadband & mobile (added) ----
+    {name:"Clear Mobile",cost:0,cat:"mobile",region:"ie",label:"Mobile"},
+    {name:"Lyca Mobile",cost:0,cat:"mobile",region:"ie",label:"Mobile"},
+    {name:"Virgin Mobile",cost:0,cat:"mobile",region:"ie",label:"Mobile"},
+    {name:"Sky Mobile",cost:0,cat:"mobile",region:"ie",label:"Mobile"},
+    {name:"SIRO",cost:0,cat:"broadband",region:"ie",label:"Fibre network"},
+    {name:"Imagine",cost:0,cat:"broadband",region:"ie",label:"Rural broadband"},
+    {name:"National Broadband Ireland",cost:0,cat:"broadband",region:"ie",label:"Rural fibre"},
+    {name:"Westnet",cost:0,cat:"broadband",region:"ie",label:"Broadband"},
+    // ---- Ireland: insurance (added) ----
+    {name:"AIG",cost:0,cat:"insurance_car",region:"ie",label:"Car & home"},
+    {name:"AA Ireland",cost:0,cat:"insurance_car",region:"ie",label:"Car & breakdown"},
+    {name:"Chill Insurance",cost:0,cat:"insurance_car",region:"ie",label:"Broker"},
+    {name:"Quote Devil",cost:0,cat:"insurance_car",region:"ie",label:"Broker"},
+    {name:"Cover in a Click",cost:0,cat:"insurance_car",region:"ie",label:"Broker"},
+    {name:"Campion Insurance",cost:0,cat:"insurance_car",region:"ie",label:"Broker"},
+    {name:"SuperValu Insurance",cost:0,cat:"insurance_car",region:"ie",label:"Car & home"},
+    {name:"KennCo",cost:0,cat:"insurance_car",region:"ie",label:"Car & home"},
+    {name:"Its4Women",cost:0,cat:"insurance_car",region:"ie",label:"Car insurance"},
+    {name:"Insuremycars",cost:0,cat:"insurance_car",region:"ie",label:"Broker"},
+    {name:"Blue Insurance",cost:0,cat:"insurance_home",region:"ie",label:"Home & travel"},
+    {name:"Irish Life",cost:0,cat:"insurance_home",region:"ie",label:"Life & cover"},
+    {name:"New Ireland",cost:0,cat:"insurance_home",region:"ie",label:"Life & cover"},
+    // ---- Ireland: health insurance ----
+    {name:"VHI",cost:0,cat:"insurance_health",region:"ie",label:"Health insurance"},
+    {name:"Laya Healthcare",cost:0,cat:"insurance_health",region:"ie",label:"Health insurance"},
+    {name:"Irish Life Health",cost:0,cat:"insurance_health",region:"ie",label:"Health insurance"},
+    // ---- Ireland: bins & waste ----
+    {name:"Thorntons Recycling",cost:0,cat:"waste",region:"ie",label:"Bin collection"},
+    {name:"City Bin Co",cost:0,cat:"waste",region:"ie",label:"Bin collection"},
+    {name:"KWD Recycling",cost:0,cat:"waste",region:"ie",label:"Bin collection"},
+    {name:"Barna Recycling",cost:0,cat:"waste",region:"ie",label:"Bin collection"},
+    {name:"Clean Ireland",cost:0,cat:"waste",region:"ie",label:"Bin collection"},
     // ---- Ireland: broadband & mobile ----
     {name:"Eir",cost:0,cat:"broadband",region:"ie",label:"Broadband & mobile"},
     {name:"Virgin Media",cost:0,cat:"broadband",region:"ie",label:"Broadband & TV"},
@@ -619,8 +655,8 @@
     {name:"Finance Ireland",cost:0,cat:"mortgage",region:"ie",label:"Mortgage"},
     // ---- Ireland: other recurring ----
     {name:"TV Licence",cost:0,cat:"other",region:"ie",label:"Annual"},
-    {name:"Panda Waste",cost:0,cat:"other",region:"ie",label:"Bin collection"},
-    {name:"Greyhound Recycling",cost:0,cat:"other",region:"ie",label:"Bin collection"},
+    {name:"Panda Waste",cost:0,cat:"waste",region:"ie",label:"Bin collection"},
+    {name:"Greyhound Recycling",cost:0,cat:"waste",region:"ie",label:"Bin collection"},
     // ---- Global: streaming & music ----
     {name:"Netflix",cost:15.99,cat:"streaming",region:"global",label:"Video on demand"},
     {name:"Disney+",cost:9.99,cat:"streaming",region:"global",label:"Video on demand"},
@@ -683,7 +719,7 @@
     } else {
       items = items.filter(function(s){return s.status!=="cancelled";});
       if(filter==="trial") items = items.filter(function(s){return s.trial;});
-      if(filter==="bill") items = items.filter(function(s){return ["bill","electricity","gas","energy","broadband","mobile","insurance_car","insurance_home","mortgage"].indexOf(s.cat)>=0;});
+      if(filter==="bill") items = items.filter(function(s){return ["bill","electricity","gas","energy","broadband","mobile","insurance_car","insurance_home","insurance_health","mortgage","waste"].indexOf(s.cat)>=0;});
     }
     items.sort(function(a,b){
       var da = a.trial ? daysUntil(a.trialEnd) : daysUntil(a.date);
@@ -785,6 +821,17 @@
     nintendoonline:"nintendo.com", twitch:"twitch.tv", discordnitro:"discord.com",
     duolingo:"duolingo.com", slack:"slack.com", playstation:"playstation.com",
     nintendo:"nintendo.com", xbox:"xbox.com",
+    gopower:"gopower.ie", clearmobile:"clearmobile.ie", lycamobile:"lycamobile.ie",
+    virginmobile:"virginmedia.ie", skymobile:"sky.ie", siro:"siro.ie", imagine:"imagine.ie",
+    nationalbroadbandireland:"nbi.ie", westnet:"westnet.ie",
+    aig:"aig.ie", aaireland:"theaa.ie", chillinsurance:"chill.ie", quotedevil:"quotedevil.ie",
+    coverinaclick:"coverinaclick.ie", campioninsurance:"campion.ie",
+    supervaluinsurance:"supervalu.ie", kennco:"kennco.ie", its4women:"its4women.ie",
+    insuremycars:"insuremycars.ie", blueinsurance:"blueinsurance.ie",
+    irishlife:"irishlife.ie", newireland:"newireland.ie",
+    vhi:"vhi.ie", layahealthcare:"layahealthcare.ie", irishlifehealth:"irishlifehealth.ie",
+    thorntonsrecycling:"thorntons-recycling.ie", citybinco:"citybin.ie",
+    kwdrecycling:"kwd.ie", barnarecycling:"barnarecycling.ie", cleanireland:"cleanireland.ie",
     // Ireland — energy
     electricireland:"electricireland.ie", bordgaisenergy:"bordgaisenergy.ie",
     sseairtricity:"sseairtricity.com", energia:"energia.ie", flogas:"flogas.ie",
@@ -826,6 +873,23 @@
     prepaypower:{init:"PP",color:"#e5006e"}, communitypower:{init:"CP",color:"#6cbe45"},
     ecopowersupply:{init:"EP",color:"#4fae57"}, waterpower:{init:"WP",color:"#12b3b3"},
     yunoenergy:{init:"YU",color:"#2fb6c9"},
+    gopower:{init:"GP",color:"#4aae32"}, clearmobile:{init:"CM",color:"#e60000"},
+    lycamobile:{init:"LY",color:"#e2231a"}, virginmobile:{init:"VM",color:"#e10a0a"},
+    skymobile:{init:"SKY",color:"#2a8cff"}, siro:{init:"SI",color:"#e5006e"},
+    imagine:{init:"IM",color:"#7d3fb0"}, nationalbroadbandireland:{init:"NBI",color:"#2a7de1"},
+    westnet:{init:"WN",color:"#3aa935"},
+    aig:{init:"AIG",color:"#2a4d9c"}, aaireland:{init:"AA",color:"#ffcf2e"},
+    chillinsurance:{init:"CH",color:"#9b7fd4"}, quotedevil:{init:"QD",color:"#e2231a"},
+    coverinaclick:{init:"CC",color:"#2fae6b"}, campioninsurance:{init:"CI",color:"#4a6bd6"},
+    supervaluinsurance:{init:"SV",color:"#e2231a"}, kennco:{init:"KC",color:"#2f86c4"},
+    its4women:{init:"I4W",color:"#e5006e"}, insuremycars:{init:"IMC",color:"#2a7de1"},
+    blueinsurance:{init:"BI",color:"#2a7de1"}, irishlife:{init:"IL",color:"#1f9c5a"},
+    newireland:{init:"NI",color:"#2f6bd6"},
+    vhi:{init:"VHI",color:"#00a3d9"}, layahealthcare:{init:"LAYA",color:"#7d3fb0"},
+    irishlifehealth:{init:"ILH",color:"#1f9c5a"},
+    thorntonsrecycling:{init:"TH",color:"#3aa935"}, citybinco:{init:"CB",color:"#2a7de1"},
+    kwdrecycling:{init:"KWD",color:"#4aae32"}, barnarecycling:{init:"BR",color:"#3aa935"},
+    cleanireland:{init:"CL",color:"#2fae6b"},
     eir:{init:"EIR",color:"#7d3fb0"}, virginmedia:{init:"VM",color:"#e10a0a"},
     skyireland:{init:"SKY",color:"#2a8cff"}, vodafone:{init:"VF",color:"#e60000"},
     three:{init:"3",color:"#b0b0b8"}, puretelecom:{init:"PT",color:"#3aa935"},
