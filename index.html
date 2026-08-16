@@ -72,6 +72,7 @@
   .icon .fallback{display:none;font-size:20px;font-weight:800;color:#fff}
   .icon .init{display:flex;align-items:center;justify-content:center;width:100%;height:100%;
     font-weight:800;font-size:14px;letter-spacing:.01em}
+  .icon .fallback.init{font-size:14px}
   .card .mid{flex:1;min-width:0}
   .card .name{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis}
@@ -768,22 +769,46 @@
 
   // Real brand icons via each service's own favicon (covers brands Simple Icons dropped)
   var LOGO_DOMAINS = {
+    // Global streaming / music
     netflix:"netflix.com", disney:"disneyplus.com", amazonprime:"amazon.com",
     primevideo:"primevideo.com", youtubepremium:"youtube.com", appletv:"tv.apple.com",
     hbomax:"max.com", paramount:"paramountplus.com", hulu:"hulu.com", peacock:"peacocktv.com",
     crunchyroll:"crunchyroll.com", now:"nowtv.com", britbox:"britbox.com", dazn:"dazn.com",
     spotify:"spotify.com", applemusic:"music.apple.com", tidal:"tidal.com", deezer:"deezer.com",
-    audible:"audible.com", icloud:"icloud.com", googleone:"one.google.com", dropbox:"dropbox.com",
+    audible:"audible.com",
+    // Global software / gaming
+    icloud:"icloud.com", googleone:"one.google.com", dropbox:"dropbox.com",
     microsoft365:"microsoft.com", notion:"notion.so", adobe:"adobe.com", canva:"canva.com",
-    chatgptplus:"chatgpt.com", grammarly:"grammarly.com", nordvpn:"nordvpn.com",
+    chatgptplus:"openai.com", grammarly:"grammarly.com", nordvpn:"nordvpn.com",
     linkedinpremium:"linkedin.com", playstationplus:"playstation.com", xboxgamepass:"xbox.com",
     nintendoonline:"nintendo.com", twitch:"twitch.tv", discordnitro:"discord.com",
-    duolingo:"duolingo.com",
-    slack:"slack.com", playstation:"playstation.com", nintendo:"nintendo.com", xbox:"xbox.com"
+    duolingo:"duolingo.com", slack:"slack.com", playstation:"playstation.com",
+    nintendo:"nintendo.com", xbox:"xbox.com",
+    // Ireland — energy
+    electricireland:"electricireland.ie", bordgaisenergy:"bordgaisenergy.ie",
+    sseairtricity:"sseairtricity.com", energia:"energia.ie", flogas:"flogas.ie",
+    pinergy:"pinergy.ie", prepaypower:"prepaypower.ie", communitypower:"communitypower.ie",
+    ecopowersupply:"ecopowersupply.ie", waterpower:"waterpower.ie", yunoenergy:"yunoenergy.ie",
+    // Ireland — broadband & mobile
+    eir:"eir.ie", virginmedia:"virginmedia.ie", skyireland:"sky.ie", vodafone:"vodafone.ie",
+    three:"three.ie", gomo:"gomo.ie", tescomobile:"tescomobile.ie", "48":"48.ie",
+    anpostmobile:"anpost.com", puretelecom:"puretelecom.ie", digiweb:"digiweb.ie",
+    // Ireland — insurance
+    axa:"axa.ie", aviva:"aviva.ie", allianz:"allianz.ie", zurich:"zurich.ie",
+    libertyinsurance:"libertyinsurance.ie", fbdinsurance:"fbd.ie", "123ie":"123.ie",
+    anpostinsurance:"anpost.com", rsainsurance:"rsagroup.ie",
+    // Ireland — mortgage
+    aibmortgage:"aib.ie", bankofireland:"bankofireland.com", permanenttsb:"permanenttsb.ie",
+    avantmoney:"avantmoney.ie", havenmortgages:"havenmortgages.ie", ebsmortgage:"ebs.ie",
+    icsmortgages:"icsmortgages.ie", financeireland:"financeireland.ie",
+    // Ireland — other
+    tvlicence:"tvlicence.ie", pandawaste:"panda.ie", greyhoundrecycling:"greyhound.ie"
   };
+  var LOGODEV_KEY = "pk_S6tVH5XIR9GFJvfde9cilQ";
   function faviconURL(name){
     var d = LOGO_DOMAINS[norm(name)];
-    return d ? "https://www.google.com/s2/favicons?domain="+d+"&sz=128" : null;
+    if(!d) return null;
+    return "https://img.logo.dev/"+d+"?token="+LOGODEV_KEY+"&size=128&format=png&retina=true";
   }
   // Irish suppliers (and others without a clean logo): show a coloured initials tile
   // instead of a blurry favicon. key -> { init, color }
@@ -815,12 +840,15 @@
   function iconHTML(s){
     var name = s.name;
     var letter = esc(((name||"?").trim().charAt(0) || "?").toUpperCase());
+    var bi = BRAND_INIT[norm(name)];
+    var fallbackHTML = bi
+      ? '<span class="fallback init" style="color:'+bi.color+'">'+esc(bi.init)+'</span>'
+      : '<span class="fallback">'+letter+'</span>';
     var fav = faviconURL(name);
     if(fav){
       return '<div class="icon"><img class="logo" alt="" src="'+fav+'" onerror="logoFail(this)"/>'+
-        '<span class="fallback">'+letter+'</span></div>';
+        fallbackHTML+'</div>';
     }
-    var bi = BRAND_INIT[norm(name)];
     if(bi){
       return '<div class="icon"><span class="init" style="color:'+bi.color+'">'+esc(bi.init)+'</span></div>';
     }
