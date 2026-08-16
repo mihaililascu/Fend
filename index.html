@@ -70,8 +70,9 @@
     display:flex;align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden}
   .icon img.logo{width:26px;height:26px;object-fit:contain;display:block}
   .icon .fallback{display:none;font-size:20px;font-weight:800;color:#fff}
-  .icon .init{display:flex;align-items:center;justify-content:center;width:100%;height:100%;
+  .icon .init{align-items:center;justify-content:center;width:100%;height:100%;
     font-weight:800;font-size:14px;letter-spacing:.01em}
+  .icon > .init:only-child{display:flex}
   .icon .fallback.init{font-size:14px}
   .card .mid{flex:1;min-width:0}
   .card .name{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;
