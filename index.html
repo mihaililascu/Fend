@@ -806,11 +806,17 @@
     tvlicence:"tvlicence.ie", pandawaste:"panda.ie", greyhoundrecycling:"greyhound.ie"
   };
   var LOGODEV_KEY = "pk_S6tVH5XIR9GFJvfde9cilQ";
-  function faviconURL(name){
+  function logoPrimary(name){
     var d = LOGO_DOMAINS[norm(name)];
     if(!d) return null;
     return "https://img.logo.dev/"+d+"?token="+LOGODEV_KEY+"&size=128";
   }
+  function logoBackup(name){
+    var d = LOGO_DOMAINS[norm(name)];
+    if(!d) return null;
+    return "https://www.google.com/s2/favicons?domain="+d+"&sz=128";
+  }
+  function faviconURL(name){ return logoPrimary(name); }
   // Irish suppliers (and others without a clean logo): show a coloured initials tile
   // instead of a blurry favicon. key -> { init, color }
   var BRAND_INIT = {
@@ -845,9 +851,11 @@
     var fallbackHTML = bi
       ? '<span class="fallback init" style="color:'+bi.color+'">'+esc(bi.init)+'</span>'
       : '<span class="fallback">'+letter+'</span>';
-    var fav = faviconURL(name);
+    var fav = logoPrimary(name);
     if(fav){
-      return '<div class="icon"><img class="logo" alt="" src="'+fav+'" onerror="logoFail(this)"/>'+
+      var alt = logoBackup(name);
+      return '<div class="icon"><img class="logo" alt="" src="'+fav+'"'+
+        (alt?' data-alt="'+alt+'"':'')+' onerror="logoNext(this)"/>'+
         fallbackHTML+'</div>';
     }
     if(bi){
@@ -865,6 +873,15 @@
       '<span class="fallback">'+letter+'</span></div>';
   }
 
+  function logoNext(img){
+    var alt = img.getAttribute("data-alt");
+    if(alt && img.getAttribute("data-tried") !== "1"){
+      img.setAttribute("data-tried","1");
+      img.src = alt;
+      return;
+    }
+    logoFail(img);
+  }
   function logoFail(img){
     img.style.display="none";
     var fb=img.parentNode.querySelector(".fallback");
@@ -1027,9 +1044,11 @@
   // ---- Onboarding hero (uses the shared favicon resolver) ----
   function obIcon(name){
     var letter = esc(((name||"?").trim().charAt(0) || "?").toUpperCase());
-    var fav = faviconURL(name);
+    var fav = logoPrimary(name);
     if(!fav){ return '<span class="fallback" style="display:flex">'+letter+'</span>'; }
-    return '<img class="logo" alt="" src="'+fav+'" onerror="logoFail(this)"/><span class="fallback">'+letter+'</span>';
+    var alt = logoBackup(name);
+    return '<img class="logo" alt="" src="'+fav+'"'+(alt?' data-alt="'+alt+'"':'')+
+      ' onerror="logoNext(this)"/><span class="fallback">'+letter+'</span>';
   }
   document.querySelectorAll(".ob-tile").forEach(function(tile){
     tile.innerHTML = obIcon(tile.getAttribute("data-ob"));
