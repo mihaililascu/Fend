@@ -172,6 +172,10 @@
     border:1px solid rgba(16,185,129,.35);border-radius:var(--radius);
     padding:20px;margin-top:14px;display:flex;align-items:center;gap:16px}
   .ds-emoji{font-size:34px;flex:0 0 auto}
+  .ds-stamp{width:58px;height:58px;flex:0 0 auto;transform:rotate(-12deg)}
+  .due-alert{background:linear-gradient(180deg,rgba(255,107,138,.12),transparent),var(--surface);
+    border-color:rgba(255,107,138,.4)}
+  .ds-title.alert{color:#ff8aa3}
   .ds-title{font-size:18px;font-weight:800;color:var(--accent-2)}
   .ds-sub{font-size:14px;color:var(--muted);margin-top:3px;line-height:1.4}
 
@@ -1121,6 +1125,24 @@
     if(fb) fb.style.display="flex";
   }
 
+  function stampSVG(topText, bottomText, color){
+    var uid = "st"+Math.random().toString(36).slice(2,8);
+    return '<svg class="ds-stamp" viewBox="0 0 100 100" aria-hidden="true">'+
+      '<defs><path id="'+uid+'t" d="M50,50 m-36,0 a36,36 0 1,1 72,0 a36,36 0 1,1 -72,0"/>'+
+      '<path id="'+uid+'b" d="M50,50 m-30,0 a30,30 0 1,0 60,0 a30,30 0 1,0 -60,0"/></defs>'+
+      '<g stroke="'+color+'" fill="none">'+
+        '<circle cx="50" cy="50" r="46" stroke-width="4" opacity=".92"/>'+
+        '<circle cx="50" cy="50" r="26" stroke-width="2.4" opacity=".75"/>'+
+      '</g>'+
+      '<text font-size="12.5" font-weight="800" fill="'+color+'" letter-spacing="1.6">'+
+        '<textPath href="#'+uid+'t" startOffset="25%" text-anchor="middle">'+topText+'</textPath></text>'+
+      '<text font-size="10" font-weight="800" fill="'+color+'" letter-spacing="1.4" opacity=".9">'+
+        '<textPath href="#'+uid+'b" startOffset="25%" text-anchor="middle">'+bottomText+'</textPath></text>'+
+      '<g fill="'+color+'" opacity=".85">'+
+        '<circle cx="24" cy="50" r="1.9"/><circle cx="76" cy="50" r="1.9"/>'+
+      '</g></svg>';
+  }
+
   function renderDueSoon(){
     var card = document.getElementById("dueSoonCard");
     if(filter!=="all"){ card.style.display="none"; return; }
@@ -1129,11 +1151,27 @@
       var d = s.trial ? daysUntil(s.trialEnd) : daysUntil(s.date);
       return d>=0 && d<=7;
     });
-    if(soon.length>0){ card.style.display="none"; return; }
     card.style.display="flex";
-    card.className = "due-soon";
-    card.innerHTML = '<div class="ds-emoji">🌿</div><div><div class="ds-title">Nothing due soon</div>'+
-      '<div class="ds-sub">No renewals or trial deadlines in the next 7 days.</div></div>';
+    if(soon.length>0){
+      var total = soon.reduce(function(a,s){return a+s.cost;},0);
+      var next = soon.slice().sort(function(a,b){
+        var da = a.trial ? daysUntil(a.trialEnd) : daysUntil(a.date);
+        var db = b.trial ? daysUntil(b.trialEnd) : daysUntil(b.date);
+        return da-db;
+      })[0];
+      var nd = next.trial ? daysUntil(next.trialEnd) : daysUntil(next.date);
+      var when = nd===0 ? "today" : (nd===1 ? "tomorrow" : "in "+nd+" days");
+      card.className = "due-soon due-alert";
+      card.innerHTML = stampSVG("PAYMENT DUE","PAYMENT DUE","#ff6b8a")+
+        '<div><div class="ds-title alert">'+soon.length+
+        (soon.length===1?" payment":" payments")+' due</div>'+
+        '<div class="ds-sub">'+esc(next.name)+' '+when+' · '+money(total)+' in the next 7 days.</div></div>';
+    } else {
+      card.className = "due-soon";
+      card.innerHTML = stampSVG("ALL CLEAR","NOTHING DUE","#10b981")+
+        '<div><div class="ds-title">Nothing due soon</div>'+
+        '<div class="ds-sub">No renewals or trial deadlines in the next 7 days.</div></div>';
+    }
   }
 
   // ---- Get started checklist ----
