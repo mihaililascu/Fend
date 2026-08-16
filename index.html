@@ -809,7 +809,7 @@
   function faviconURL(name){
     var d = LOGO_DOMAINS[norm(name)];
     if(!d) return null;
-    return "https://img.logo.dev/"+d+"?token="+LOGODEV_KEY+"&size=128&format=png&retina=true";
+    return "https://img.logo.dev/"+d+"?token="+LOGODEV_KEY+"&size=128";
   }
   // Irish suppliers (and others without a clean logo): show a coloured initials tile
   // instead of a blurry favicon. key -> { init, color }
