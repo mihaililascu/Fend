@@ -93,6 +93,26 @@
   .bc-near{background:rgba(148,163,184,.14);color:#a8b3c2}
   .bc-note{color:var(--muted);font-size:10.5px;line-height:1.45;margin-top:10px;
     padding-top:9px;border-top:1px solid var(--line)}
+  /* Detail sheet */
+  .dt-head{display:flex;align-items:center;gap:13px;margin-bottom:14px}
+  .dt-headtext{flex:1;min-width:0}
+  .dt-head h2{margin:0;font-size:21px;font-weight:800;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap}
+  .dt-cat{color:var(--muted);font-size:12.5px;margin-top:2px;text-transform:capitalize}
+  .dt-big{font-size:38px;font-weight:800;letter-spacing:-.02em;margin:2px 0 18px}
+  .dt-big small{font-size:15px;color:var(--muted);font-weight:600;margin-left:3px}
+  .dt-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .dt-stat{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .dt-stat .k{display:block;color:var(--muted);font-size:11.5px;margin-bottom:4px}
+  .dt-stat .v{display:block;font-size:17px;font-weight:800}
+  .dt-stat .v.sm{font-size:14.5px}
+  .dt-cmp{margin-top:14px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:14px;padding:13px}
+  .dt-cmp .k{display:block;color:var(--muted);font-size:11.5px;margin-bottom:6px}
+  .dt-cmp .bar{height:7px;border-radius:999px;background:#26262c;overflow:hidden;margin:9px 0 7px}
+  .dt-cmp .bar i{display:block;height:100%;border-radius:999px}
+  .dt-cmp .msg{font-size:12.5px;font-weight:700}
+  .dt-cmp .note{color:var(--muted);font-size:10.5px;line-height:1.45;margin-top:7px}
   .card .mid{flex:1;min-width:0}
   .card .name{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis}
@@ -437,6 +457,23 @@
     <button id="navSettings" title="Settings">☰</button>
   </div>
 
+  <!-- Detail sheet -->
+  <div class="sheet" id="detailSheet">
+    <div class="grab"></div>
+    <div class="dt-head">
+      <div id="dtIcon"></div>
+      <div class="dt-headtext">
+        <h2 id="dtName">Name</h2>
+        <div class="dt-cat" id="dtCat"></div>
+      </div>
+    </div>
+    <div class="dt-big"><span id="dtCost"></span><small id="dtCycle"></small></div>
+    <div class="dt-stats" id="dtStats"></div>
+    <div id="dtCompare"></div>
+    <button class="save" id="dtEditBtn">Edit</button>
+    <button class="cancel-toggle" id="dtCloseBtn">Close</button>
+  </div>
+
   <!-- Add / edit sheet -->
   <div class="scrim" id="scrim"></div>
   <div class="sheet" id="sheet">
@@ -580,7 +617,8 @@
   function daysFromNow(n){var d=new Date(today);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
   function fromRow(r){
     return {id:r.id,name:r.name,cost:Number(r.cost),cycle:r.cycle,cat:r.category,
-      trial:!!r.is_trial,trialEnd:r.trial_end_date,date:r.renewal_date,status:r.status};
+      trial:!!r.is_trial,trialEnd:r.trial_end_date,date:r.renewal_date,status:r.status,
+      created:r.created_at};
   }
   function loadSubs(){
     sb.from("subscriptions").select("*").order("renewal_date",{ascending:true}).then(function(res){
@@ -795,7 +833,7 @@
     var cards = el.querySelectorAll(".card");
     for(var i=0;i<cards.length;i++){
       cards[i].addEventListener("click",function(){
-        openSheet(this.getAttribute("data-id"));
+        openDetail(this.getAttribute("data-id"));
       });
     }
   }
@@ -1135,7 +1173,7 @@
     for(var i2=0;i2<cards.length;i2++){
       cards[i2].addEventListener("click",function(){
         switchView("home");
-        openSheet(this.getAttribute("data-id"));
+        openDetail(this.getAttribute("data-id"));
       });
     }
   }
@@ -1251,6 +1289,81 @@
     document.getElementById("trialFields").classList.toggle("show",trialOn);
   });
 
+  // ---- Detail view ----
+  var detailId = null;
+  function openDetail(id){
+    var s = subs.filter(function(x){return x.id===id;})[0];
+    if(!s) return;
+    detailId = id;
+
+    document.getElementById("dtIcon").innerHTML = iconHTML({name:s.name});
+    document.getElementById("dtName").textContent = s.name;
+    var catLabel = (BENCHMARKS[s.cat] && BENCHMARKS[s.cat].label) || s.cat.replace(/_/g," ");
+    document.getElementById("dtCat").textContent =
+      catLabel + (s.status==="cancelled" ? " · cancelled" : (s.trial ? " · free trial" : ""));
+    document.getElementById("dtCost").textContent = money(s.cost);
+    document.getElementById("dtCycle").textContent = s.cycle==="yearly" ? "/yr" : "/mo";
+
+    var m = monthlyCost(s);
+    var yearly = m*12;
+
+    // total paid since added
+    var paidTxt = "—", paidNote = "since you added it";
+    if(s.created){
+      var start = new Date(s.created);
+      var months = (Date.now() - start.getTime())/(1000*60*60*24*30.44);
+      if(months < 0) months = 0;
+      var cycles = s.cycle==="yearly" ? Math.floor(months/12) : Math.floor(months);
+      var paid = cycles * s.cost;
+      paidTxt = money(paid);
+      paidNote = cycles===0 ? "no full cycle yet" :
+        cycles+(s.cycle==="yearly" ? " year" : " month")+(cycles===1?"":"s")+" tracked";
+    }
+
+    var target = s.trial && s.trialEnd ? s.trialEnd : s.date;
+    var d = daysUntil(target);
+    var daysTxt = (d===null||isNaN(d)) ? "—" : (d<0 ? Math.abs(d)+" days ago" : d+" days");
+
+    document.getElementById("dtStats").innerHTML =
+      '<div class="dt-stat"><span class="k">Cost per year</span><span class="v">'+money(yearly)+'</span></div>'+
+      '<div class="dt-stat"><span class="k">Per month</span><span class="v">'+money(m)+'</span></div>'+
+      '<div class="dt-stat"><span class="k">'+(s.trial?"Trial ends in":"Renews in")+'</span>'+
+        '<span class="v">'+esc(daysTxt)+'</span></div>'+
+      '<div class="dt-stat"><span class="k">Paid so far</span><span class="v">'+paidTxt+'</span>'+
+        '<span class="k" style="margin:4px 0 0">'+esc(paidNote)+'</span></div>';
+
+    // comparison (bills only, information only)
+    var cmp = document.getElementById("dtCompare");
+    var b = BENCHMARKS[s.cat];
+    if(b){
+      var pct = Math.round(((m-b.avg)/b.avg)*100);
+      var near = Math.abs(pct)<=10;
+      var over = pct>0;
+      var col = near ? "#a8b3c2" : (over ? "#ff8a8a" : "#34d399");
+      var width = Math.max(4, Math.min(100, (m/(b.avg*2))*100));
+      var msg = near ? "About the Irish average"
+        : (over ? Math.abs(pct)+"% above the Irish average" : Math.abs(pct)+"% below the Irish average");
+      cmp.innerHTML = '<div class="dt-cmp"><span class="k">Compared to the Irish average ('+
+        money(b.avg)+'/mo)</span>'+
+        '<div class="bar"><i style="width:'+width.toFixed(0)+'%;background:'+col+'"></i></div>'+
+        '<div class="msg" style="color:'+col+'">'+esc(msg)+'</div>'+
+        '<div class="note">'+BENCH_NOTE+'</div></div>';
+    } else {
+      cmp.innerHTML = "";
+    }
+
+    document.getElementById("scrim").classList.add("show");
+    document.getElementById("detailSheet").classList.add("show");
+  }
+  function closeDetail(){
+    document.getElementById("scrim").classList.remove("show");
+    document.getElementById("detailSheet").classList.remove("show");
+  }
+  document.getElementById("dtCloseBtn").addEventListener("click",closeDetail);
+  document.getElementById("dtEditBtn").addEventListener("click",function(){
+    var id = detailId; closeDetail(); openSheet(id);
+  });
+
   // ---- Sheet open/close ----
   function openSheet(id){
     editingId = id || null;
@@ -1302,7 +1415,7 @@
     document.getElementById("sheet").classList.remove("show");
   }
   document.getElementById("addBtn").addEventListener("click",function(){openSheet(null);});
-  document.getElementById("scrim").addEventListener("click",closeSheet);
+  document.getElementById("scrim").addEventListener("click",function(){closeSheet();closeDetail();});
 
   // ---- Save ----
   document.getElementById("saveBtn").addEventListener("click",function(){
