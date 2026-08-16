@@ -422,13 +422,30 @@
     <h2 id="sheetTitle">Add subscription</h2>
 
     <div class="field">
-      <label>Quick add</label>
-      <div class="preset-scroll" id="presetChips"></div>
+      <label>Category</label>
+      <select id="fCat">
+        <option value="streaming">Streaming</option>
+        <option value="software">Software</option>
+        <option value="electricity">Electricity</option>
+        <option value="gas">Gas</option>
+        <option value="energy">Electricity &amp; Gas</option>
+        <option value="broadband">Broadband</option>
+        <option value="mobile">Mobile &amp; phone</option>
+        <option value="insurance_car">Car insurance</option>
+        <option value="insurance_home">Home insurance</option>
+        <option value="mortgage">Mortgage</option>
+        <option value="other">Other</option>
+      </select>
     </div>
 
     <div class="field">
       <label>Name</label>
-      <input id="fName" placeholder="e.g. Netflix" />
+      <input id="fName" placeholder="e.g. Electric Ireland" />
+    </div>
+
+    <div class="field" id="presetField">
+      <label>Quick pick a supplier</label>
+      <div class="preset-scroll" id="presetChips"></div>
     </div>
 
     <div class="row2">
@@ -448,23 +465,6 @@
     <div class="field">
       <label>Next renewal date</label>
       <input id="fDate" type="date" />
-    </div>
-
-    <div class="field">
-      <label>Category</label>
-      <select id="fCat">
-        <option value="streaming">Streaming</option>
-        <option value="software">Software</option>
-        <option value="electricity">Electricity</option>
-        <option value="gas">Gas</option>
-        <option value="energy">Electricity &amp; Gas</option>
-        <option value="broadband">Broadband</option>
-        <option value="mobile">Mobile &amp; phone</option>
-        <option value="insurance_car">Car insurance</option>
-        <option value="insurance_home">Home insurance</option>
-        <option value="mortgage">Mortgage</option>
-        <option value="other">Other</option>
-      </select>
     </div>
 
     <div class="toggle-row" id="trialToggle">
@@ -1029,12 +1029,20 @@
     }
   });
 
-  // ---- Presets ----
+  // ---- Presets (category-scoped quick pick) ----
   var REGION = "ie"; // region-ready: shows this region + global. Selector comes later.
-  (function(){
+  function renderPresets(cat){
     var wrap=document.getElementById("presetChips");
-    presets.filter(function(p){ return !p.region || p.region==="global" || p.region===REGION; })
-    .forEach(function(p){
+    var field=document.getElementById("presetField");
+    if(!wrap) return;
+    wrap.innerHTML="";
+    var list = presets.filter(function(p){
+      var regionOk = !p.region || p.region==="global" || p.region===REGION;
+      var catOk = !cat || p.cat===cat;
+      return regionOk && catOk;
+    });
+    if(field) field.style.display = list.length ? "" : "none";
+    list.forEach(function(p){
       var b=document.createElement("button");
       b.className="preset-card";
       var brand = BRANDS[norm(p.name)] || {};
@@ -1047,11 +1055,16 @@
         '<div class="pc-label">'+esc(p.label||"")+'</div>';
       b.addEventListener("click",function(){
         document.getElementById("fName").value=p.name;
-        document.getElementById("fCost").value=p.cost;
+        if(p.cost) document.getElementById("fCost").value=p.cost;
         document.getElementById("fCat").value=p.cat;
       });
       wrap.appendChild(b);
     });
+  }
+  (function(){
+    var catSel=document.getElementById("fCat");
+    renderPresets(catSel ? catSel.value : null);
+    if(catSel) catSel.addEventListener("change",function(){ renderPresets(catSel.value); });
   })();
 
   // ---- Trial toggle ----
@@ -1074,6 +1087,7 @@
     document.getElementById("fDate").value=daysFromNow(30);
     document.getElementById("fCat").value="streaming";
     document.getElementById("fTrialEnd").value=daysFromNow(7);
+    renderPresets("streaming");
     trialOn=false;
     document.getElementById("trialSw").classList.remove("on");
     document.getElementById("trialFields").classList.remove("show");
@@ -1088,6 +1102,7 @@
         document.getElementById("fCycle").value=s.cycle;
         document.getElementById("fDate").value=s.date;
         document.getElementById("fCat").value=s.cat;
+        renderPresets(s.cat);
         if(s.trial){
           trialOn=true;
           document.getElementById("trialSw").classList.add("on");
