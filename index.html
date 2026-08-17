@@ -172,6 +172,8 @@
     font-weight:700;padding:9px 12px;border-radius:10px}
   .wl-note{color:var(--muted);font-size:10.5px;line-height:1.45;margin-top:12px;
     padding-top:10px;border-top:1px solid var(--line)}
+  .sr-select{background:none;border:none;color:var(--muted);font-size:14px;font-family:inherit;
+    text-align:right;padding:0;appearance:none;-webkit-appearance:none;outline:none}
   .cal-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:12px 2px 4px}
   .lg-item{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);
     text-transform:capitalize}
@@ -354,6 +356,12 @@
     <div class="auth-msg" id="authMsg"></div>
     <div class="auth-field"><input type="email" id="authEmail" placeholder="Email" autocomplete="email" /></div>
     <div class="auth-field"><input type="password" id="authPassword" placeholder="Password (min 6 characters)" autocomplete="current-password" /></div>
+    <div class="auth-field" id="authCountryWrap" style="display:none">
+      <select id="authCountry">
+        <option value="ie">🇮🇪 Ireland</option>
+        <option value="uk">🇬🇧 United Kingdom</option>
+      </select>
+    </div>
     <button class="auth-btn" id="authSubmit">Log in</button>
     <div class="auth-switch">
       <span id="authSwitchText">Don't have an account?</span> <b id="authSwitchBtn">Sign up</b>
@@ -547,9 +555,14 @@
         <div class="sw on" id="notifSw"></div>
       </div>
       <div class="settings-row" id="currencyRow">
-        <div class="sr-icon">💶</div>
-        <div class="sr-label">Currency</div>
-        <div class="sr-value">EUR (€) ›</div>
+        <div class="sr-icon">🌍</div>
+        <div class="sr-label">Country</div>
+        <div class="sr-value">
+          <select id="setCountry" class="sr-select">
+            <option value="ie">Ireland (€)</option>
+            <option value="uk">United Kingdom (£)</option>
+          </select>
+        </div>
       </div>
       <div class="settings-row">
         <div class="sr-icon">⭐</div>
@@ -630,6 +643,7 @@
         <option value="insurance_home">Home insurance</option>
         <option value="insurance_health">Health insurance</option>
         <option value="mortgage">Mortgage</option>
+        <option value="water">Water</option>
         <option value="waste">Bins &amp; waste</option>
         <option value="other">Other</option>
       </select>
@@ -647,7 +661,7 @@
 
     <div class="row2">
       <div class="field">
-        <label>Cost (€)</label>
+        <label>Cost (<span class="curSym">€</span>)</label>
         <input id="fCost" type="number" inputmode="decimal" placeholder="0.00" />
       </div>
       <div class="field">
@@ -708,6 +722,7 @@
     document.getElementById("authSubmit").textContent = authMode==="login" ? "Log in" : "Sign up";
     document.getElementById("authSwitchText").textContent = authMode==="login" ? "Don't have an account?" : "Already have an account?";
     document.getElementById("authSwitchBtn").textContent = authMode==="login" ? "Sign up" : "Log in";
+    document.getElementById("authCountryWrap").style.display = authMode==="signup" ? "" : "none";
     clearAuthNotices();
   });
   document.getElementById("authSubmit").addEventListener("click",function(){
@@ -717,6 +732,10 @@
     if(!email || !password){ showAuthError("Enter an email and password."); return; }
     if(password.length<6){ showAuthError("Password needs at least 6 characters."); return; }
     var btn=this; btn.disabled=true;
+    if(authMode==="signup"){
+      var cSel = document.getElementById("authCountry");
+      if(cSel) setRegion(cSel.value);
+    }
     var action = authMode==="login"
       ? sb.auth.signInWithPassword({email:email,password:password})
       : sb.auth.signUp({email:email,password:password});
@@ -851,6 +870,80 @@
     {name:"TV Licence",cost:0,cat:"other",region:"ie",label:"Annual"},
     {name:"Panda Waste",cost:0,cat:"waste",region:"ie",label:"Bin collection"},
     {name:"Greyhound Recycling",cost:0,cat:"waste",region:"ie",label:"Bin collection"},
+    // ================= UNITED KINGDOM =================
+    // Energy
+    {name:"British Gas",cost:0,cat:"energy",region:"uk",label:"Electricity & gas"},
+    {name:"Octopus Energy",cost:0,cat:"energy",region:"uk",label:"Electricity & gas"},
+    {name:"EDF Energy",cost:0,cat:"energy",region:"uk",label:"Electricity & gas"},
+    {name:"E.ON Next",cost:0,cat:"energy",region:"uk",label:"Electricity & gas"},
+    {name:"ScottishPower",cost:0,cat:"energy",region:"uk",label:"Electricity & gas"},
+    {name:"OVO Energy",cost:0,cat:"energy",region:"uk",label:"Electricity & gas"},
+    {name:"Utilita",cost:0,cat:"electricity",region:"uk",label:"Pay-as-you-go"},
+    {name:"So Energy",cost:0,cat:"energy",region:"uk",label:"Electricity & gas"},
+    {name:"Good Energy",cost:0,cat:"electricity",region:"uk",label:"Green electricity"},
+    {name:"Utility Warehouse",cost:0,cat:"energy",region:"uk",label:"Bundled bills"},
+    {name:"Sainsburys Energy",cost:0,cat:"energy",region:"uk",label:"Electricity & gas"},
+    // Broadband
+    {name:"BT",cost:0,cat:"broadband",region:"uk",label:"Broadband & TV"},
+    {name:"Sky",cost:0,cat:"broadband",region:"uk",label:"Broadband & TV"},
+    {name:"Virgin Media UK",cost:0,cat:"broadband",region:"uk",label:"Broadband & TV"},
+    {name:"TalkTalk",cost:0,cat:"broadband",region:"uk",label:"Broadband"},
+    {name:"Plusnet",cost:0,cat:"broadband",region:"uk",label:"Broadband"},
+    {name:"NOW Broadband",cost:0,cat:"broadband",region:"uk",label:"Broadband"},
+    {name:"Hyperoptic",cost:0,cat:"broadband",region:"uk",label:"Full fibre"},
+    {name:"Community Fibre",cost:0,cat:"broadband",region:"uk",label:"Full fibre"},
+    {name:"Zen Internet",cost:0,cat:"broadband",region:"uk",label:"Broadband"},
+    // Mobile
+    {name:"EE",cost:0,cat:"mobile",region:"uk",label:"Mobile"},
+    {name:"O2",cost:0,cat:"mobile",region:"uk",label:"Mobile"},
+    {name:"Vodafone UK",cost:0,cat:"mobile",region:"uk",label:"Mobile"},
+    {name:"Three UK",cost:0,cat:"mobile",region:"uk",label:"Mobile"},
+    {name:"giffgaff",cost:0,cat:"mobile",region:"uk",label:"Mobile"},
+    {name:"Tesco Mobile UK",cost:0,cat:"mobile",region:"uk",label:"Mobile"},
+    {name:"Sky Mobile UK",cost:0,cat:"mobile",region:"uk",label:"Mobile"},
+    {name:"VOXI",cost:0,cat:"mobile",region:"uk",label:"Mobile"},
+    {name:"Smarty",cost:0,cat:"mobile",region:"uk",label:"Mobile"},
+    {name:"iD Mobile",cost:0,cat:"mobile",region:"uk",label:"Mobile"},
+    // Car insurance
+    {name:"Direct Line",cost:0,cat:"insurance_car",region:"uk",label:"Car & home"},
+    {name:"Admiral",cost:0,cat:"insurance_car",region:"uk",label:"Car & home"},
+    {name:"Aviva UK",cost:0,cat:"insurance_car",region:"uk",label:"Car & home"},
+    {name:"Churchill",cost:0,cat:"insurance_car",region:"uk",label:"Car & home"},
+    {name:"Hastings Direct",cost:0,cat:"insurance_car",region:"uk",label:"Car insurance"},
+    {name:"LV=",cost:0,cat:"insurance_car",region:"uk",label:"Car & home"},
+    {name:"esure",cost:0,cat:"insurance_car",region:"uk",label:"Car & home"},
+    {name:"AXA UK",cost:0,cat:"insurance_car",region:"uk",label:"Car & home"},
+    // Home insurance
+    {name:"More Than",cost:0,cat:"insurance_home",region:"uk",label:"Home & car"},
+    {name:"Saga",cost:0,cat:"insurance_home",region:"uk",label:"Home & car"},
+    {name:"Tesco Bank Insurance",cost:0,cat:"insurance_home",region:"uk",label:"Home & car"},
+    // Health insurance
+    {name:"Bupa",cost:0,cat:"insurance_health",region:"uk",label:"Health insurance"},
+    {name:"AXA Health",cost:0,cat:"insurance_health",region:"uk",label:"Health insurance"},
+    {name:"Vitality",cost:0,cat:"insurance_health",region:"uk",label:"Health insurance"},
+    // Mortgage
+    {name:"Halifax",cost:0,cat:"mortgage",region:"uk",label:"Mortgage"},
+    {name:"Nationwide",cost:0,cat:"mortgage",region:"uk",label:"Mortgage"},
+    {name:"Barclays",cost:0,cat:"mortgage",region:"uk",label:"Mortgage"},
+    {name:"HSBC",cost:0,cat:"mortgage",region:"uk",label:"Mortgage"},
+    {name:"Lloyds Bank",cost:0,cat:"mortgage",region:"uk",label:"Mortgage"},
+    {name:"NatWest",cost:0,cat:"mortgage",region:"uk",label:"Mortgage"},
+    {name:"Santander UK",cost:0,cat:"mortgage",region:"uk",label:"Mortgage"},
+    {name:"Skipton",cost:0,cat:"mortgage",region:"uk",label:"Mortgage"},
+    // Water (UK only)
+    {name:"Thames Water",cost:0,cat:"water",region:"uk",label:"Water"},
+    {name:"Severn Trent",cost:0,cat:"water",region:"uk",label:"Water"},
+    {name:"United Utilities",cost:0,cat:"water",region:"uk",label:"Water"},
+    {name:"Anglian Water",cost:0,cat:"water",region:"uk",label:"Water"},
+    {name:"Yorkshire Water",cost:0,cat:"water",region:"uk",label:"Water"},
+    {name:"Southern Water",cost:0,cat:"water",region:"uk",label:"Water"},
+    {name:"South West Water",cost:0,cat:"water",region:"uk",label:"Water"},
+    {name:"Wessex Water",cost:0,cat:"water",region:"uk",label:"Water"},
+    {name:"Northumbrian Water",cost:0,cat:"water",region:"uk",label:"Water"},
+    // Other
+    {name:"TV Licence UK",cost:0,cat:"other",region:"uk",label:"Annual"},
+    {name:"Council Tax",cost:0,cat:"other",region:"uk",label:"Monthly"},
+    // ================= GLOBAL =================
     // ---- Global: streaming & music ----
     {name:"Netflix",cost:15.99,cat:"streaming",region:"global",label:"Video on demand"},
     {name:"Disney+",cost:9.99,cat:"streaming",region:"global",label:"Video on demand"},
@@ -888,7 +981,8 @@
     var d=new Date(dateStr+"T00:00:00");
     return Math.round((d - today)/86400000);
   }
-  function money(n){ return "€"+n.toLocaleString("en-IE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function curSym(){ return REGION==="uk" ? "£" : "€"; }
+  function money(n){ return curSym()+n.toLocaleString(REGION==="uk"?"en-GB":"en-IE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function whenText(n){
     if(n<0) return "renewed "+(-n)+"d ago";
     if(n===0) return "renews today";
@@ -907,15 +1001,33 @@
 
   // ---- Bill check (information only — not advice, no switching) ----
   // Irish national averages, 2026. Electricity based on CRU typical 4,200 kWh/yr.
-  var BENCHMARKS = {
-    electricity:{avg:150, label:"electricity"},
-    gas:{avg:119, label:"gas"},
-    energy:{avg:269, label:"electricity & gas"},
-    broadband:{avg:45, label:"broadband"},
-    mobile:{avg:20, label:"mobile"}
+  var BENCHMARKS_BY_REGION = {
+    ie:{
+      electricity:{avg:150, label:"electricity"},
+      gas:{avg:119, label:"gas"},
+      energy:{avg:269, label:"electricity & gas"},
+      broadband:{avg:45, label:"broadband"},
+      mobile:{avg:20, label:"mobile"}
+    },
+    uk:{
+      electricity:{avg:74, label:"electricity"},
+      gas:{avg:63, label:"gas"},
+      energy:{avg:137, label:"electricity & gas"},
+      broadband:{avg:32, label:"broadband"},
+      mobile:{avg:16, label:"mobile"},
+      water:{avg:41, label:"water"}
+    }
   };
-  var BENCH_NOTE = "Irish averages, 2026. Electricity €1,805/yr and gas €1,429/yr "+
-    "based on typical usage (CRU). Your usage, tariff and discounts will differ.";
+  Object.defineProperty(window,"BENCHMARKS",{get:function(){
+    return BENCHMARKS_BY_REGION[REGION] || BENCHMARKS_BY_REGION.ie;
+  }});
+  function benchNote(){
+    return REGION==="uk"
+      ? "UK averages, 2026. Based on Ofgem's price cap of \u00a31,641/yr for typical "+
+        "household use. Your usage, tariff and discounts will differ."
+      : "Irish averages, 2026. Electricity \u20ac1,805/yr and gas \u20ac1,429/yr "+
+        "based on typical usage (CRU). Your usage, tariff and discounts will differ.";
+  }
 
   function renderList(){
     var el = document.getElementById("list");
@@ -925,7 +1037,7 @@
     } else {
       items = items.filter(function(s){return s.status!=="cancelled";});
       if(filter==="trial") items = items.filter(function(s){return s.trial;});
-      if(filter==="bill") items = items.filter(function(s){return ["bill","electricity","gas","energy","broadband","mobile","insurance_car","insurance_home","insurance_health","mortgage","waste"].indexOf(s.cat)>=0;});
+      if(filter==="bill") items = items.filter(function(s){return ["bill","electricity","gas","energy","broadband","mobile","insurance_car","insurance_home","insurance_health","mortgage","waste","water"].indexOf(s.cat)>=0;});
     }
     items.sort(function(a,b){
       var da = a.trial ? daysUntil(a.trialEnd) : daysUntil(a.date);
@@ -1000,7 +1112,7 @@
         '<span class="bc-vs">vs '+money(b.avg)+'</span></div>'+
         '<div class="bc-flag '+cls+'">'+msg+'</div></div>';
     });
-    html += '<div class="bc-note">'+BENCH_NOTE+'</div>';
+    html += '<div class="bc-note">'+benchNote()+'</div>';
     card.innerHTML = html;
     card.style.display = "block";
   }
@@ -1070,6 +1182,37 @@
     vhi:"vhi.ie", layahealthcare:"layahealthcare.ie", irishlifehealth:"irishlifehealth.ie",
     thorntonsrecycling:"thorntons-recycling.ie", citybinco:"citybin.ie",
     kwdrecycling:"kwd.ie", barnarecycling:"barnarecycling.ie", cleanireland:"cleanireland.ie",
+    // UK — energy
+    britishgas:"britishgas.co.uk", octopusenergy:"octopus.energy", edfenergy:"edfenergy.com",
+    eonnext:"eonnext.com", scottishpower:"scottishpower.co.uk", ovoenergy:"ovoenergy.com",
+    utilita:"utilita.co.uk", soenergy:"so.energy", goodenergy:"goodenergy.co.uk",
+    utilitywarehouse:"uw.co.uk", sainsburysenergy:"sainsburysenergy.com",
+    // UK — broadband
+    bt:"bt.com", sky:"sky.com", virginmediauk:"virginmedia.com", talktalk:"talktalk.co.uk",
+    plusnet:"plus.net", nowbroadband:"nowtv.com", hyperoptic:"hyperoptic.com",
+    communityfibre:"communityfibre.co.uk", zeninternet:"zen.co.uk",
+    // UK — mobile
+    ee:"ee.co.uk", o2:"o2.co.uk", vodafoneuk:"vodafone.co.uk", threeuk:"three.co.uk",
+    giffgaff:"giffgaff.com", tescomobileuk:"tescomobile.com", skymobileuk:"sky.com",
+    voxi:"voxi.co.uk", smarty:"smarty.co.uk", idmobile:"idmobile.co.uk",
+    // UK — insurance
+    directline:"directline.com", admiral:"admiral.com", avivauk:"aviva.co.uk",
+    churchill:"churchill.com", hastingsdirect:"hastingsdirect.com", lv:"lv.com",
+    esure:"esure.com", axauk:"axa.co.uk", morethan:"morethan.com", saga:"saga.co.uk",
+    tescobankinsurance:"tescobank.com", bupa:"bupa.co.uk", axahealth:"axahealth.co.uk",
+    vitality:"vitality.co.uk",
+    // UK — mortgage
+    halifax:"halifax.co.uk", nationwide:"nationwide.co.uk", barclays:"barclays.co.uk",
+    hsbc:"hsbc.co.uk", lloydsbank:"lloydsbank.com", natwest:"natwest.com",
+    santanderuk:"santander.co.uk", skipton:"skipton.co.uk",
+    // UK — water
+    thameswater:"thameswater.co.uk", severntrent:"stwater.co.uk",
+    unitedutilities:"unitedutilities.com", anglianwater:"anglianwater.co.uk",
+    yorkshirewater:"yorkshirewater.com", southernwater:"southernwater.co.uk",
+    southwestwater:"southwestwater.co.uk", wessexwater:"wessexwater.co.uk",
+    northumbrianwater:"nwl.co.uk",
+    // UK — other
+    tvlicenceuk:"tvlicensing.co.uk", counciltax:"gov.uk",
     // Ireland — energy
     electricireland:"electricireland.ie", bordgaisenergy:"bordgaisenergy.ie",
     sseairtricity:"sseairtricity.com", energia:"energia.ie", flogas:"flogas.ie",
@@ -1128,6 +1271,39 @@
     thorntonsrecycling:{init:"TH",color:"#3aa935"}, citybinco:{init:"CB",color:"#2a7de1"},
     kwdrecycling:{init:"KWD",color:"#4aae32"}, barnarecycling:{init:"BR",color:"#3aa935"},
     cleanireland:{init:"CL",color:"#2fae6b"},
+    britishgas:{init:"BG",color:"#0396d6"}, octopusenergy:{init:"OC",color:"#e847a0"},
+    edfenergy:{init:"EDF",color:"#f36f21"}, eonnext:{init:"EON",color:"#e2001a"},
+    scottishpower:{init:"SP",color:"#00a94f"}, ovoenergy:{init:"OVO",color:"#0a9b4e"},
+    utilita:{init:"UT",color:"#7ac143"}, soenergy:{init:"SO",color:"#2fb6a8"},
+    goodenergy:{init:"GE",color:"#8cc63f"}, utilitywarehouse:{init:"UW",color:"#00a3e0"},
+    sainsburysenergy:{init:"SE",color:"#f06c00"},
+    bt:{init:"BT",color:"#6400aa"}, sky:{init:"SKY",color:"#0072c9"},
+    virginmediauk:{init:"VM",color:"#e10a0a"}, talktalk:{init:"TT",color:"#7c2ae8"},
+    plusnet:{init:"PN",color:"#00a0d6"}, nowbroadband:{init:"NOW",color:"#00b6de"},
+    hyperoptic:{init:"HY",color:"#e5006e"}, communityfibre:{init:"CF",color:"#00b2a9"},
+    zeninternet:{init:"ZEN",color:"#e2231a"},
+    ee:{init:"EE",color:"#00b2a9"}, o2:{init:"O2",color:"#0019a5"},
+    vodafoneuk:{init:"VF",color:"#e60000"}, threeuk:{init:"3",color:"#b0b0b8"},
+    giffgaff:{init:"GG",color:"#000000"}, tescomobileuk:{init:"TM",color:"#00539f"},
+    skymobileuk:{init:"SKY",color:"#0072c9"}, voxi:{init:"VX",color:"#ff5cb0"},
+    smarty:{init:"SM",color:"#ffcd00"}, idmobile:{init:"iD",color:"#e5006e"},
+    directline:{init:"DL",color:"#e2231a"}, admiral:{init:"AD",color:"#0d4d8c"},
+    avivauk:{init:"AV",color:"#ffd21e"}, churchill:{init:"CH",color:"#0d5aa7"},
+    hastingsdirect:{init:"HD",color:"#e2231a"}, lv:{init:"LV",color:"#00a651"},
+    esure:{init:"ES",color:"#5c2d91"}, axauk:{init:"AXA",color:"#00008f"},
+    morethan:{init:"MT",color:"#e2231a"}, saga:{init:"SG",color:"#0072c6"},
+    tescobankinsurance:{init:"TB",color:"#00539f"}, bupa:{init:"BU",color:"#0079c8"},
+    axahealth:{init:"AXA",color:"#00008f"}, vitality:{init:"VI",color:"#8dc63f"},
+    halifax:{init:"HX",color:"#005eb8"}, nationwide:{init:"NW",color:"#1b3f94"},
+    barclays:{init:"BC",color:"#00aeef"}, hsbc:{init:"HS",color:"#db0011"},
+    lloydsbank:{init:"LB",color:"#006a4d"}, natwest:{init:"NW",color:"#5a287f"},
+    santanderuk:{init:"SA",color:"#ec0000"}, skipton:{init:"SK",color:"#00a1de"},
+    thameswater:{init:"TW",color:"#0072ce"}, severntrent:{init:"ST",color:"#00a9e0"},
+    unitedutilities:{init:"UU",color:"#0072ce"}, anglianwater:{init:"AW",color:"#0090d4"},
+    yorkshirewater:{init:"YW",color:"#003b71"}, southernwater:{init:"SW",color:"#00a0df"},
+    southwestwater:{init:"SWW",color:"#0072ce"}, wessexwater:{init:"WW",color:"#00b5e2"},
+    northumbrianwater:{init:"NW",color:"#0072ce"},
+    tvlicenceuk:{init:"TV",color:"#1f9c5a"}, counciltax:{init:"CT",color:"#64748b"},
     eir:{init:"EIR",color:"#7d3fb0"}, virginmedia:{init:"VM",color:"#e10a0a"},
     skyireland:{init:"SKY",color:"#2a8cff"}, vodafone:{init:"VF",color:"#e60000"},
     three:{init:"3",color:"#b0b0b8"}, puretelecom:{init:"PT",color:"#3aa935"},
@@ -1451,6 +1627,17 @@
   document.getElementById("wlOpen").addEventListener("click",function(){ switchView("left"); });
   document.getElementById("wlBack").addEventListener("click",function(){ switchView("home"); });
 
+  // ---- Country / region ----
+  (function(){
+    var sel = document.getElementById("setCountry");
+    if(sel){
+      sel.value = REGION;
+      sel.addEventListener("change",function(){ setRegion(this.value); });
+    }
+    var syms = document.querySelectorAll(".curSym");
+    for(var i=0;i<syms.length;i++) syms[i].textContent = curSym();
+  })();
+
   // ---- View switching ----
   function switchView(view){
     document.getElementById("homeView").style.display = view==="home" ? "block" : "none";
@@ -1516,7 +1703,20 @@
   });
 
   // ---- Presets (category-scoped quick pick) ----
-  var REGION = "ie"; // region-ready: shows this region + global. Selector comes later.
+  var REGION = (function(){
+    try{ return localStorage.getItem("fend_region") || "ie"; }catch(e){ return "ie"; }
+  })();
+  function setRegion(r){
+    REGION = (r==="uk") ? "uk" : "ie";
+    try{ localStorage.setItem("fend_region", REGION); }catch(e){}
+    var syms = document.querySelectorAll(".curSym");
+    for(var i=0;i<syms.length;i++) syms[i].textContent = curSym();
+    var sel = document.getElementById("setCountry");
+    if(sel) sel.value = REGION;
+    var catSel = document.getElementById("fCat");
+    if(catSel && typeof renderPresets==="function") renderPresets(catSel.value);
+    if(typeof renderAll==="function") renderAll();
+  }
   function renderPresets(cat){
     var wrap=document.getElementById("presetChips");
     var field=document.getElementById("presetField");
@@ -1619,7 +1819,7 @@
         money(b.avg)+'/mo)</span>'+
         '<div class="bar"><i style="width:'+width.toFixed(0)+'%;background:'+col+'"></i></div>'+
         '<div class="msg" style="color:'+col+'">'+esc(msg)+'</div>'+
-        '<div class="note">'+BENCH_NOTE+'</div></div>';
+        '<div class="note">'+benchNote()+'</div></div>';
     } else {
       cmp.innerHTML = "";
     }
