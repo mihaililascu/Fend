@@ -146,6 +146,32 @@
   .cal-day .dnum{font-size:12px;color:var(--muted);font-weight:600}
   .cal-day .dots{display:flex;gap:2px}
   .cal-day .dot{width:6px;height:6px;border-radius:999px;background:var(--accent)}
+  /* What's left */
+  .wl-link{display:block;width:100%;background:none;border:1px dashed var(--line);
+    color:var(--muted);font-size:13px;font-weight:600;padding:12px;border-radius:14px;
+    margin:0 0 14px;cursor:pointer;font-family:inherit}
+  .wl-link:active{background:var(--surface)}
+  .wl-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .wl-back{background:none;border:none;color:var(--accent);font-size:15px;font-weight:700;
+    padding:6px 2px;cursor:pointer;font-family:inherit}
+  .wl-h{font-size:22px;font-weight:800;margin:0}
+  .wl-intro{color:var(--muted);font-size:13.5px;line-height:1.5;margin:0 0 18px}
+  .wl-empty{color:var(--muted);font-size:13.5px;text-align:center;padding:22px 10px;
+    border:1px dashed var(--line);border-radius:16px}
+  .wl-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px}
+  .wl-k{color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+  .wl-big{font-size:40px;font-weight:800;letter-spacing:-.02em;margin:4px 0 14px;color:var(--accent-2)}
+  .wl-big.neg{color:#ff8a8a}
+  .wl-bar{display:flex;height:9px;border-radius:999px;overflow:hidden;background:#26262c;margin-bottom:14px}
+  .wl-bar i{display:block;height:100%}
+  .wl-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;
+    border-top:1px solid var(--line);font-size:14px}
+  .wl-row span{color:var(--muted);display:flex;align-items:center;gap:7px}
+  .wl-row i.d{width:8px;height:8px;border-radius:999px;display:inline-block}
+  .wl-warn{margin-top:12px;background:rgba(255,107,107,.14);color:#ff8a8a;font-size:12.5px;
+    font-weight:700;padding:9px 12px;border-radius:10px}
+  .wl-note{color:var(--muted);font-size:10.5px;line-height:1.45;margin-top:12px;
+    padding-top:10px;border-top:1px solid var(--line)}
   .cal-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:12px 2px 4px}
   .lg-item{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);
     text-transform:capitalize}
@@ -448,6 +474,7 @@
 
     <div id="dueSoonCard" style="display:none"></div>
     <div id="billCheckCard" style="display:none"></div>
+    <button class="wl-link" id="wlOpen">What's left after your bills? →</button>
 
     <div class="pills" id="pills">
       <button class="pill active" data-filter="all">All</button>
@@ -469,6 +496,39 @@
     <div class="cal-legend" id="calLegend"></div>
     <div class="section-label" id="calListLabel">Renewals this month</div>
     <div id="calList"></div>
+  </div>
+
+  <div id="leftView" style="display:none">
+    <div class="wl-top">
+      <button class="wl-back" id="wlBack">‹ Back</button>
+      <h2 class="wl-h">What's left</h2>
+    </div>
+    <p class="wl-intro">Add what you earn and roughly what you spend day to day.
+      Fend subtracts your bills and subscriptions automatically.</p>
+
+    <div class="field">
+      <label>Take-home pay</label>
+      <div class="row2">
+        <input id="wlPay" type="number" inputmode="decimal" placeholder="0.00" />
+        <select id="wlFreq">
+          <option value="monthly">Monthly</option>
+          <option value="weekly">Weekly</option>
+          <option value="fortnightly">Fortnightly</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Everyday spending (food, fuel, etc.) — per month</label>
+      <input id="wlSpend" type="number" inputmode="decimal" placeholder="0.00" />
+    </div>
+
+    <div class="field">
+      <label>Putting into savings — per month</label>
+      <input id="wlSave" type="number" inputmode="decimal" placeholder="0.00" />
+    </div>
+
+    <div id="wlResult"></div>
   </div>
 
   <div id="settingsView" style="display:none">
@@ -1327,11 +1387,77 @@
   document.getElementById("calPrev").addEventListener("click",function(){ calOffset--; renderCalendar(); });
   document.getElementById("calNext").addEventListener("click",function(){ calOffset++; renderCalendar(); });
 
+  // ---- What's left ----
+  function wlVal(id){ var v = parseFloat(document.getElementById(id).value); return isNaN(v)?0:v; }
+  function renderWhatsLeft(){
+    var pay = wlVal("wlPay");
+    var freq = document.getElementById("wlFreq").value;
+    var monthlyPay = freq==="weekly" ? pay*52/12 : (freq==="fortnightly" ? pay*26/12 : pay);
+    var bills = subs.filter(function(s){return s.status!=="cancelled";})
+                    .reduce(function(a,s){return a+monthlyCost(s);},0);
+    var spend = wlVal("wlSpend");
+    var save = wlVal("wlSave");
+    var left = monthlyPay - bills - spend - save;
+
+    var el = document.getElementById("wlResult");
+    if(monthlyPay<=0){
+      el.innerHTML = '<div class="wl-empty">Enter your take-home pay to see what\'s left.</div>';
+      return;
+    }
+    var pctBills = Math.min(100,(bills/monthlyPay)*100);
+    var pctSpend = Math.min(100-pctBills,(spend/monthlyPay)*100);
+    var pctSave  = Math.max(0,Math.min(100-pctBills-pctSpend,(save/monthlyPay)*100));
+    var good = left>=0;
+    el.innerHTML =
+      '<div class="wl-card">'+
+        '<div class="wl-k">Left over each month</div>'+
+        '<div class="wl-big'+(good?"":" neg")+'">'+money(left)+'</div>'+
+        '<div class="wl-bar">'+
+          '<i style="width:'+pctBills.toFixed(1)+'%;background:#e5484d"></i>'+
+          '<i style="width:'+pctSpend.toFixed(1)+'%;background:#f5a524"></i>'+
+          '<i style="width:'+pctSave.toFixed(1)+'%;background:#8b5cf6"></i>'+
+        '</div>'+
+        '<div class="wl-rows">'+
+          '<div class="wl-row"><span>Take-home pay</span><b>'+money(monthlyPay)+'</b></div>'+
+          '<div class="wl-row"><span><i class="d" style="background:#e5484d"></i>Bills &amp; subscriptions</span><b>−'+money(bills)+'</b></div>'+
+          '<div class="wl-row"><span><i class="d" style="background:#f5a524"></i>Everyday spending</span><b>−'+money(spend)+'</b></div>'+
+          '<div class="wl-row"><span><i class="d" style="background:#8b5cf6"></i>Savings</span><b>−'+money(save)+'</b></div>'+
+        '</div>'+
+        (good ? '' : '<div class="wl-warn">That\'s more going out than coming in.</div>')+
+        '<div class="wl-note">Rough guide only, based on what you\'ve entered. '+
+          'Bills come from your saved subscriptions.</div>'+
+      '</div>';
+  }
+  ["wlPay","wlSpend","wlSave"].forEach(function(id){
+    document.getElementById(id).addEventListener("input",function(){
+      try{ localStorage.setItem("fend_"+id, this.value); }catch(e){}
+      renderWhatsLeft();
+    });
+  });
+  document.getElementById("wlFreq").addEventListener("change",function(){
+    try{ localStorage.setItem("fend_wlFreq", this.value); }catch(e){}
+    renderWhatsLeft();
+  });
+  (function(){
+    try{
+      ["wlPay","wlSpend","wlSave"].forEach(function(id){
+        var v = localStorage.getItem("fend_"+id);
+        if(v!==null) document.getElementById(id).value = v;
+      });
+      var f = localStorage.getItem("fend_wlFreq");
+      if(f) document.getElementById("wlFreq").value = f;
+    }catch(e){}
+  })();
+  document.getElementById("wlOpen").addEventListener("click",function(){ switchView("left"); });
+  document.getElementById("wlBack").addEventListener("click",function(){ switchView("home"); });
+
   // ---- View switching ----
   function switchView(view){
     document.getElementById("homeView").style.display = view==="home" ? "block" : "none";
     document.getElementById("calendarView").style.display = view==="calendar" ? "block" : "none";
+    document.getElementById("leftView").style.display = view==="left" ? "block" : "none";
     document.getElementById("settingsView").style.display = view==="settings" ? "block" : "none";
+    if(view==="left") renderWhatsLeft();
     document.getElementById("navHome").classList.toggle("on", view==="home");
     document.getElementById("navCalendar").classList.toggle("on", view==="calendar");
     document.getElementById("navSettings").classList.toggle("on", view==="settings");
