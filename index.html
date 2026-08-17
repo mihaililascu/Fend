@@ -146,6 +146,10 @@
   .cal-day .dnum{font-size:12px;color:var(--muted);font-weight:600}
   .cal-day .dots{display:flex;gap:2px}
   .cal-day .dot{width:6px;height:6px;border-radius:999px;background:var(--accent)}
+  .cal-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:12px 2px 4px}
+  .lg-item{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);
+    text-transform:capitalize}
+  .lg-item i{width:8px;height:8px;border-radius:999px;display:inline-block;flex:0 0 auto}
   .cal-day .dot.trial-dot{background:var(--amber)}
 
   /* Settings */
@@ -462,6 +466,7 @@
       <button id="calNext">›</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-legend" id="calLegend"></div>
     <div class="section-label" id="calListLabel">Renewals this month</div>
     <div id="calList"></div>
   </div>
@@ -1226,6 +1231,16 @@
     return out;
   }
 
+  // Category colours for calendar dots
+  var CAT_COLORS = {
+    streaming:"#e5484d", software:"#8b5cf6",
+    electricity:"#f5a524", gas:"#3b82f6", energy:"#14b8a6",
+    broadband:"#06b6d4", mobile:"#ec4899",
+    insurance_car:"#22c55e", insurance_home:"#84cc16", insurance_health:"#10b981",
+    mortgage:"#f97316", waste:"#a16207", bill:"#64748b", other:"#94a3b8"
+  };
+  function catColor(cat){ return CAT_COLORS[cat] || "#94a3b8"; }
+
   function renderCalendar(){
     var base = new Date(today.getFullYear(), today.getMonth()+calOffset, 1);
     var year = base.getFullYear(), month = base.getMonth();
@@ -1251,13 +1266,36 @@
       if(byDay[d]){
         html += '<div class="dots">';
         byDay[d].slice(0,4).forEach(function(r){
-          html += '<div class="dot'+(r.isTrial?' trial-dot':'')+'"></div>';
+          var col = r.isTrial ? "var(--amber)" : catColor(r.sub.cat);
+          html += '<div class="dot'+(r.isTrial?' trial-dot':'')+
+            '" style="background:'+col+'"></div>';
         });
         html += '</div>';
       }
       html += '</div>';
     }
     grid.innerHTML = html;
+
+    // legend — only categories actually shown this month
+    var legend = document.getElementById("calLegend");
+    if(legend){
+      var seen = {}, order = [];
+      renewals.forEach(function(r){
+        if(r.isTrial){ if(!seen.__trial){ seen.__trial=1; order.push({k:"__trial",label:"Free trial ends",col:"var(--amber)"}); } return; }
+        if(!seen[r.sub.cat]){
+          seen[r.sub.cat]=1;
+          var lbl = (BENCHMARKS[r.sub.cat] && BENCHMARKS[r.sub.cat].label) || r.sub.cat.replace(/_/g," ");
+          order.push({k:r.sub.cat,label:lbl,col:catColor(r.sub.cat)});
+        }
+      });
+      if(order.length===0){ legend.innerHTML=""; legend.style.display="none"; }
+      else{
+        legend.style.display="flex";
+        legend.innerHTML = order.map(function(o){
+          return '<span class="lg-item"><i style="background:'+o.col+'"></i>'+esc(o.label)+'</span>';
+        }).join("");
+      }
+    }
 
     var listEl = document.getElementById("calList");
     if(renewals.length===0){
