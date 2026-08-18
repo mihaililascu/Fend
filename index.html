@@ -543,15 +543,15 @@
     <div class="settings-promo">
       <div class="sp-icon">✦</div>
       <div class="sp-title">Unlock Premium</div>
-      <div class="sp-sub">Remove ads · Renewal reminders · Trial alerts</div>
+      <div class="sp-sub">Renewal reminders · Trial alerts</div>
       <button class="sp-cta">Upgrade Now →</button>
     </div>
 
     <div class="section-label">General</div>
     <div class="settings-list">
       <div class="settings-row">
-        <div class="sr-icon">🔔</div>
-        <div class="sr-label">Push Notifications</div>
+        <div class="sr-icon">✉️</div>
+        <div class="sr-label">Email reminders</div>
         <div class="sw on" id="notifSw"></div>
       </div>
       <div class="settings-row" id="currencyRow">
@@ -1665,6 +1665,15 @@
   document.getElementById("supportRow").addEventListener("click",function(){
     window.location.href = "mailto:hello@fend.app?subject=Fend support";
   });
+
+  // ---- Pro (billing not built yet — honest coming-soon, no dead-ends) ----
+  function proComingSoon(){
+    alert("Fend Pro is coming soon \u2726\n\nRenewal reminders and trial alerts are free for everyone during launch. You'll be able to upgrade from here once it's ready.");
+  }
+  var _goPro = document.querySelector(".gopro");
+  if(_goPro){ _goPro.addEventListener("click", proComingSoon); }
+  var _upgrade = document.querySelector(".sp-cta");
+  if(_upgrade){ _upgrade.addEventListener("click", proComingSoon); }
 
   // ---- Onboarding hero (uses the shared favicon resolver) ----
   function obIcon(name){
