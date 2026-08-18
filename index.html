@@ -569,12 +569,12 @@
         <div class="sr-label">Rate Us</div>
         <div class="sr-value">›</div>
       </div>
-      <div class="settings-row">
+      <div class="settings-row" id="termsRow">
         <div class="sr-icon">📄</div>
         <div class="sr-label">Terms of Use</div>
         <div class="sr-value">›</div>
       </div>
-      <div class="settings-row">
+      <div class="settings-row" id="privacyRow">
         <div class="sr-icon">🛡️</div>
         <div class="sr-label">Privacy Policy</div>
         <div class="sr-value">›</div>
@@ -1663,7 +1663,13 @@
     renderChecklist();
   });
   document.getElementById("supportRow").addEventListener("click",function(){
-    window.location.href = "mailto:hello@fend.app?subject=Fend support";
+    window.location.href = "mailto:hello@getfendapp.com?subject=Fend support";
+  });
+  document.getElementById("termsRow").addEventListener("click",function(){
+    window.location.href = "/terms.html";
+  });
+  document.getElementById("privacyRow").addEventListener("click",function(){
+    window.location.href = "/privacy.html";
   });
 
   // ---- Pro (billing not built yet — honest coming-soon, no dead-ends) ----
