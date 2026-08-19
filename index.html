@@ -659,6 +659,7 @@
     <div class="dt-big"><span id="dtCost"></span><small id="dtCycle"></small></div>
     <div class="dt-stats" id="dtStats"></div>
     <div id="dtCompare"></div>
+    <button class="wl-link" id="dtCancelBtn" style="display:none">How do I cancel this? →</button>
     <button class="save" id="dtEditBtn">Edit</button>
     <button class="cancel-toggle" id="dtCloseBtn">Close</button>
   </div>
@@ -1949,6 +1950,9 @@
       cmp.innerHTML = "";
     }
 
+    var cancelBtn = document.getElementById("dtCancelBtn");
+    cancelBtn.style.display = (s.status==="cancelled" || s.cat==="mortgage") ? "none" : "block";
+
     document.getElementById("scrim").classList.add("show");
     document.getElementById("detailSheet").classList.add("show");
   }
@@ -1959,6 +1963,12 @@
   document.getElementById("dtCloseBtn").addEventListener("click",closeDetail);
   document.getElementById("dtEditBtn").addEventListener("click",function(){
     var id = detailId; closeDetail(); openSheet(id);
+  });
+  document.getElementById("dtCancelBtn").addEventListener("click",function(){
+    var s = subs.filter(function(x){return x.id===detailId;})[0];
+    if(!s) return;
+    var q = encodeURIComponent("how to cancel "+s.name+" subscription");
+    window.open("https://www.google.com/search?q="+q, "_blank", "noopener");
   });
 
   // ---- Sheet open/close ----
