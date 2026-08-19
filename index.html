@@ -346,6 +346,25 @@
     border:none;color:#04150f;font-family:inherit;font-weight:800;font-size:17px;
     padding:17px;border-radius:16px}
   .ob-fine{text-align:center;font-size:13px;color:var(--muted);margin-top:14px}
+  /* ---- Spend breakdown card ---- */
+  #spendCard{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 18px;margin-bottom:14px}
+  .sb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+  .sb-title{font-size:12px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+  .sb-pill{font-size:11.5px;font-weight:700;color:var(--accent);background:rgba(16,185,129,.13);padding:5px 10px;border-radius:999px;white-space:nowrap}
+  .sb-chart{position:relative;display:flex;align-items:center;justify-content:center;margin:6px 0 2px;min-height:200px}
+  .sb-donut{transform:rotate(-90deg)}
+  .sb-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+  .sb-amt{font-size:25px;font-weight:800;letter-spacing:-.5px;line-height:1}
+  .sb-yr{font-size:11.5px;color:var(--muted);margin-top:5px}
+  .sb-legend{margin-top:8px}
+  .sb-row{display:flex;align-items:center;padding:10px 2px;border-top:1px solid var(--line)}
+  .sb-row:first-child{border-top:none}
+  .sb-dot{width:11px;height:11px;border-radius:4px;margin-right:11px;flex:0 0 auto}
+  .sb-name{font-size:14.5px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sb-val{font-size:14.5px;font-weight:700;text-align:right;white-space:nowrap}
+  .sb-pct{font-size:12px;color:var(--muted);margin-left:9px;min-width:32px;text-align:right}
+  .sb-foot{margin-top:12px;font-size:13px;color:#cfcfd4;line-height:1.5;background:var(--surface-2);border-radius:12px;padding:11px 13px}
+  .sb-foot b{color:var(--text)}
 </style>
 </head>
 <body>
@@ -477,6 +496,8 @@
       <div class="big" id="heroMonthly">€0<small>/mo</small></div>
       <div class="sub">That's <b id="heroYearly">€0</b> a year across <b id="heroCount">0</b> subscriptions</div>
     </div>
+
+    <div id="spendCard" style="display:none"></div>
 
     <div id="checklistCard" style="display:none"></div>
 
@@ -999,6 +1020,70 @@
     document.getElementById("heroCount").textContent = activeSubs.length;
   }
 
+  // ---- Spend breakdown (donut, built from the user's real categories) ----
+  var CAT_META = {
+    streaming:{label:"Streaming",color:"#ef4444"},
+    software:{label:"Software",color:"#06b6d4"},
+    electricity:{label:"Electricity",color:"#fbbf24"},
+    gas:{label:"Gas",color:"#fb923c"},
+    energy:{label:"Electricity & gas",color:"#f59e0b"},
+    broadband:{label:"Broadband",color:"#8b5cf6"},
+    mobile:{label:"Mobile & phone",color:"#ec4899"},
+    insurance_car:{label:"Car insurance",color:"#3b82f6"},
+    insurance_home:{label:"Home insurance",color:"#6366f1"},
+    insurance_health:{label:"Health insurance",color:"#14b8a6"},
+    mortgage:{label:"Mortgage",color:"#10b981"},
+    water:{label:"Water",color:"#0ea5e9"},
+    waste:{label:"Bins & waste",color:"#9ca3af"},
+    other:{label:"Other",color:"#6b7280"}
+  };
+  function renderSpendBreakdown(){
+    var card = document.getElementById("spendCard");
+    var active = subs.filter(function(s){return s.status!=="cancelled";});
+    var byCat = {};
+    active.forEach(function(s){
+      var c = s.cat || "other";
+      byCat[c] = (byCat[c]||0) + monthlyCost(s);
+    });
+    var rows = [], total = 0;
+    Object.keys(byCat).forEach(function(c){ if(byCat[c]>0){ rows.push({cat:c,val:byCat[c]}); total += byCat[c]; } });
+    if(rows.length===0 || total<=0){ card.style.display="none"; return; }
+    rows.sort(function(a,b){return b.val-a.val;});
+
+    var r=80, C=2*Math.PI*r, offset=0, segs="";
+    rows.forEach(function(row){
+      var meta = CAT_META[row.cat] || {color:"#6b7280"};
+      var seg = (row.val/total)*C;
+      segs += '<circle cx="105" cy="105" r="'+r+'" fill="none" stroke="'+meta.color+'" stroke-width="26" '+
+              'stroke-dasharray="'+seg.toFixed(2)+' '+(C-seg).toFixed(2)+'" stroke-dashoffset="'+(-offset).toFixed(2)+'"></circle>';
+      offset += seg;
+    });
+
+    var legend="";
+    rows.forEach(function(row){
+      var meta = CAT_META[row.cat] || {label:row.cat,color:"#6b7280"};
+      var pct = Math.round((row.val/total)*100);
+      legend += '<div class="sb-row"><span class="sb-dot" style="background:'+meta.color+'"></span>'+
+        '<span class="sb-name">'+(meta.label||row.cat)+'</span>'+
+        '<span class="sb-val">'+money(row.val)+'</span>'+
+        '<span class="sb-pct">'+pct+'%</span></div>';
+    });
+
+    var top = rows[0], topMeta = CAT_META[top.cat] || {label:top.cat};
+    var topPct = Math.round((top.val/total)*100);
+
+    card.innerHTML =
+      '<div class="sb-head"><div class="sb-title">Where your money goes</div>'+
+      '<div class="sb-pill">'+active.length+' active</div></div>'+
+      '<div class="sb-chart"><svg class="sb-donut" width="200" height="200" viewBox="0 0 210 210">'+
+        '<circle cx="105" cy="105" r="'+r+'" fill="none" stroke="#232327" stroke-width="26"></circle>'+segs+
+      '</svg><div class="sb-center"><div class="sb-amt">'+money(total)+'</div>'+
+      '<div class="sb-yr">'+money(total*12)+' / year</div></div></div>'+
+      '<div class="sb-legend">'+legend+'</div>'+
+      '<div class="sb-foot">\uD83D\uDCA1 <b>'+(topMeta.label||top.cat)+'</b> is your biggest cost \u2014 '+topPct+'% of your monthly spend.</div>';
+    card.style.display="block";
+  }
+
   // ---- Bill check (information only — not advice, no switching) ----
   // Irish national averages, 2026. Electricity based on CRU typical 4,200 kWh/yr.
   var BENCHMARKS_BY_REGION = {
@@ -1444,7 +1529,7 @@
     card.innerHTML = html+'</div>';
   }
 
-  function renderAll(){ renderHero(); renderList(); renderDueSoon(); renderBillCheck(); renderChecklist(); }
+  function renderAll(){ renderHero(); renderSpendBreakdown(); renderList(); renderDueSoon(); renderBillCheck(); renderChecklist(); }
 
   // ---- Calendar ----
   var calOffset = 0; // months from current month
