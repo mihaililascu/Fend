@@ -365,6 +365,17 @@
   .sb-pct{font-size:12px;color:var(--muted);margin-left:9px;min-width:32px;text-align:right}
   .sb-foot{margin-top:12px;font-size:13px;color:#cfcfd4;line-height:1.5;background:var(--surface-2);border-radius:12px;padding:11px 13px}
   .sb-foot b{color:var(--text)}
+  /* ---- Compare & switch (informational outbound link) ---- */
+  .switch-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+    background:linear-gradient(135deg,rgba(16,185,129,.13),rgba(16,185,129,.03));
+    border:1px solid rgba(16,185,129,.35);color:var(--text);
+    padding:14px 16px;border-radius:16px;margin:0 0 14px;cursor:pointer;font-family:inherit}
+  .switch-card:active{opacity:.85}
+  .switch-ic{font-size:20px;flex:0 0 auto}
+  .switch-txt{flex:1}
+  .switch-title{display:block;font-size:15px;font-weight:700;line-height:1.2}
+  .switch-sub{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.35}
+  .switch-arrow{color:var(--accent);font-weight:800;font-size:18px;flex:0 0 auto}
 </style>
 </head>
 <body>
@@ -503,6 +514,14 @@
 
     <div id="dueSoonCard" style="display:none"></div>
     <div id="billCheckCard" style="display:none"></div>
+    <button class="switch-card" id="switchOpen">
+      <span class="switch-ic">💡</span>
+      <span class="switch-txt">
+        <span class="switch-title">Could you switch and save?</span>
+        <span class="switch-sub">Compare energy, broadband &amp; mobile on an independent site.</span>
+      </span>
+      <span class="switch-arrow">→</span>
+    </button>
     <button class="wl-link" id="wlOpen">What's left after your bills? →</button>
 
     <div class="pills" id="pills">
@@ -1710,6 +1729,12 @@
     }catch(e){}
   })();
   document.getElementById("wlOpen").addEventListener("click",function(){ switchView("left"); });
+  document.getElementById("switchOpen").addEventListener("click",function(){
+    // TODO: swap these for your tracked affiliate links once approved
+    // (Ireland: bonkers.ie / Switcher.ie · UK: uSwitch / MoneySuperMarket)
+    var url = REGION==="uk" ? "https://www.uswitch.com/" : "https://switcher.ie/";
+    window.open(url, "_blank", "noopener");
+  });
   document.getElementById("wlBack").addEventListener("click",function(){ switchView("home"); });
 
   // ---- Country / region ----
