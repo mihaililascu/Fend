@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#000000" />
+<title>Compare bills — Fend</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{--bg:#000;--surface:#141417;--surface-2:#1c1c20;--line:#2a2a30;
+    --text:#fff;--muted:#8a8a90;--accent:#10b981;--accent-2:#34d399;--red:#ef4444;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5;
+    max-width:560px;margin:0 auto;padding:24px 20px calc(40px + env(safe-area-inset-bottom))}
+  .brand{font-size:24px;font-weight:800;color:var(--accent);letter-spacing:-.5px}
+  h1{font-size:23px;font-weight:800;letter-spacing:-.5px;margin:16px 0 6px}
+  .lead{color:#cfcfd4;font-size:15px;margin-bottom:18px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+  .row{padding:14px 0;border-top:1px solid var(--line)}
+  .row:first-child{border-top:none}
+  .rlabel{font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  .rtheirs{font-size:15px;font-weight:600;margin-top:3px}
+  .rtheirs b{color:var(--accent-2)}
+  .inps{display:flex;gap:8px;margin-top:10px}
+  .inps input{flex:1;background:var(--surface-2);border:1px solid var(--line);color:var(--text);
+    font-family:inherit;font-size:15px;padding:11px 12px;border-radius:12px;min-width:0}
+  .inps input::placeholder{color:#6b6b70}
+  .yprice{max-width:130px}
+  button.cta{width:100%;background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#04150f;
+    border:none;font-family:inherit;font-weight:800;font-size:16px;padding:15px;border-radius:14px;cursor:pointer;margin-top:4px}
+  button.cta:active{opacity:.9}
+  .result{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+  .res-cat{font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+  .res-line{font-size:16px;font-weight:700;margin:5px 0 2px}
+  .res-line.win{color:var(--accent-2)}
+  .res-line.lose{color:#fca5a5}
+  .res-sub{font-size:13.5px;color:#cfcfd4}
+  .res-links{margin-top:9px;display:flex;flex-wrap:wrap;gap:8px}
+  .res-links a{font-size:13px;font-weight:700;color:var(--accent);background:rgba(16,185,129,.12);
+    padding:7px 12px;border-radius:999px;text-decoration:none}
+  .summary{text-align:center;font-size:16px;font-weight:700;padding:16px;background:var(--surface-2);border-radius:14px;margin-bottom:16px}
+  .getfend{background:linear-gradient(135deg,rgba(16,185,129,.14),rgba(16,185,129,.03));
+    border:1px solid rgba(16,185,129,.35);border-radius:18px;padding:20px 18px;text-align:center;margin-top:22px}
+  .getfend h3{font-size:18px;font-weight:800;margin-bottom:6px}
+  .getfend p{color:#cfcfd4;font-size:14px;margin-bottom:14px}
+  .getfend a{display:inline-block;background:var(--accent);color:#04150f;font-weight:800;font-size:15px;
+    padding:13px 26px;border-radius:12px;text-decoration:none}
+  .muted{color:var(--muted);font-size:12.5px;text-align:center;margin-top:18px;line-height:1.5}
+  #results{margin-top:4px}
+</style>
+</head>
+<body>
+  <div class="brand">Fend</div>
+  <div id="app"></div>
+
+<script>
+  var CAT_LABEL = {
+    streaming:"Streaming", software:"Software", electricity:"Electricity", gas:"Gas",
+    energy:"Electricity & gas", broadband:"Broadband", mobile:"Mobile & phone",
+    insurance_car:"Car insurance", insurance_home:"Home insurance",
+    insurance_health:"Health insurance", mortgage:"Mortgage", water:"Water",
+    waste:"Bins & waste", other:"Other"
+  };
+  var app = document.getElementById("app");
+  var DATA = null, SYM = "€", REGION = "ie";
+
+  function b64decode(s){
+    s = s.replace(/-/g,"+").replace(/_/g,"/");
+    while(s.length % 4) s += "=";
+    return decodeURIComponent(escape(atob(s)));
+  }
+  function money(n){
+    return SYM + Number(n).toLocaleString(REGION==="uk"?"en-GB":"en-IE",{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function switchUrl(){ return REGION==="uk" ? "https://www.uswitch.com/" : "https://www.bonkers.ie/"; }
+  function cancelUrl(name){ return "https://www.google.com/search?q=" + encodeURIComponent("how to cancel " + name + " subscription"); }
+
+  try {
+    var h = location.hash || "";
+    var m = h.match(/d=([^&]+)/);
+    if(m){ DATA = JSON.parse(b64decode(m[1])); }
+  } catch(e){ DATA = null; }
+
+  if(!DATA || !DATA.i || !DATA.i.length){
+    app.innerHTML =
+      '<h1>This card link looks broken</h1>'+
+      '<p class="lead">The compare link seems incomplete. Ask your friend to send it again from the Fend app.</p>'+
+      getFendBlock();
+  } else {
+    REGION = DATA.r === "uk" ? "uk" : "ie";
+    SYM = REGION === "uk" ? "£" : "€";
+    renderForm();
+  }
+
+  function renderForm(){
+    var rows = DATA.i.map(function(it,idx){
+      var label = CAT_LABEL[it.c] || it.c;
+      return '<div class="row">'+
+        '<div class="rlabel">'+esc(label)+'</div>'+
+        '<div class="rtheirs">Their '+esc(it.n)+': <b>'+money(it.p)+'/mo</b></div>'+
+        '<div class="inps">'+
+          '<input class="yname" data-idx="'+idx+'" type="text" placeholder="Your provider (optional)">'+
+          '<input class="yprice" data-idx="'+idx+'" type="number" inputmode="decimal" placeholder="Your \u20ac/mo">'+
+        '</div>'+
+      '</div>';
+    }).join("");
+    app.innerHTML =
+      '<h1>Who\u2019s overpaying?</h1>'+
+      '<p class="lead">A friend shared their bills with you privately. Pop in what <b>you</b> pay and see who\u2019s got the better deal \u2014 and how to switch.</p>'+
+      '<div class="card">'+rows+'</div>'+
+      '<button class="cta" id="cmp">Compare</button>'+
+      '<div id="results"></div>'+
+      getFendBlock();
+    document.getElementById("cmp").addEventListener("click", compare);
+  }
+
+  function compare(){
+    var prices = document.querySelectorAll(".yprice");
+    var names = document.querySelectorAll(".yname");
+    var out = "", totalYou = 0, totalThem = 0, counted = 0;
+    DATA.i.forEach(function(it,idx){
+      var yv = parseFloat(prices[idx].value);
+      if(isNaN(yv) || yv < 0) return;
+      var yn = (names[idx].value || "").trim();
+      var label = CAT_LABEL[it.c] || it.c;
+      counted++; totalYou += yv; totalThem += it.p;
+      var diff = yv - it.p;
+      var block = '<div class="result"><div class="res-cat">'+esc(label)+'</div>';
+      if(Math.abs(diff) < 0.5){
+        block += '<div class="res-line">About the same</div>'+
+          '<div class="res-sub">You both pay around '+money(it.p)+'/mo.</div>';
+      } else if(diff < 0){
+        block += '<div class="res-line win">You\u2019re cheaper \uD83C\uDF89</div>'+
+          '<div class="res-sub">You pay '+money(yv)+'/mo \u2014 that\u2019s '+money(Math.abs(diff))+'/mo less than your friend ('+money(Math.abs(diff)*12)+'/yr).</div>';
+      } else {
+        block += '<div class="res-line lose">You\u2019re paying more</div>'+
+          '<div class="res-sub">You pay '+money(yv)+'/mo \u2014 that\u2019s '+money(diff)+'/mo <b>more</b> than your friend ('+money(diff*12)+'/yr). Worth a look:</div>'+
+          '<div class="res-links">'+
+            '<a href="'+switchUrl()+'" target="_blank" rel="noopener">Compare &amp; switch \u2192</a>'+
+            (yn ? '<a href="'+cancelUrl(yn)+'" target="_blank" rel="noopener">How to cancel '+esc(yn)+'</a>' : '')+
+          '</div>';
+      }
+      block += '</div>';
+      out += block;
+    });
+
+    if(counted === 0){
+      out = '<div class="summary">Add at least one of your prices above to compare.</div>';
+    } else {
+      var tdiff = totalYou - totalThem;
+      var summary;
+      if(Math.abs(tdiff) < 0.5) summary = "Across these bills, you\u2019re about even with your friend.";
+      else if(tdiff < 0) summary = "Overall you\u2019re "+money(Math.abs(tdiff))+"/mo cheaper \uD83C\uDF89 ("+money(Math.abs(tdiff)*12)+"/yr).";
+      else summary = "Overall you\u2019re paying "+money(tdiff)+"/mo more ("+money(tdiff*12)+"/yr). Switching could close the gap.";
+      out = '<div class="summary">'+summary+'</div>' + out;
+    }
+    var r = document.getElementById("results");
+    r.innerHTML = out;
+    r.scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+  function getFendBlock(){
+    return '<div class="getfend">'+
+      '<h3>Track your own bills with Fend</h3>'+
+      '<p>Free, private, and Ireland-first. No bank linking \u2014 ever. See where your money goes and never get surprise-charged.</p>'+
+      '<a href="https://getfendapp.com" target="_blank" rel="noopener">Get Fend</a>'+
+    '</div>';
+  }
+  function esc(t){ return String(t).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+</script>
+</body>
+</html>
