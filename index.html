@@ -376,6 +376,25 @@
   .switch-title{display:block;font-size:15px;font-weight:700;line-height:1.2}
   .switch-sub{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.35}
   .switch-arrow{color:var(--accent);font-weight:800;font-size:18px;flex:0 0 auto}
+  /* ---- Fend Card: compare with a friend ---- */
+  .friend-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+    background:var(--surface);border:1px solid var(--line);color:var(--text);
+    padding:14px 16px;border-radius:16px;margin:0 0 14px;cursor:pointer;font-family:inherit}
+  .friend-card:active{opacity:.85}
+  .friend-ic{font-size:20px;flex:0 0 auto}
+  .friend-txt{flex:1}
+  .friend-title{display:block;font-size:15px;font-weight:700;line-height:1.2}
+  .friend-sub{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.35}
+  .friend-arrow{color:var(--accent);font-weight:800;font-size:18px;flex:0 0 auto}
+  .share-intro{font-size:13px;color:var(--muted);margin:2px 0 12px;line-height:1.45}
+  #shareList{max-height:44vh;overflow-y:auto;margin-bottom:10px}
+  .share-row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-top:1px solid var(--line);cursor:pointer}
+  .share-row:first-child{border-top:none}
+  .share-cb{width:22px;height:22px;flex:0 0 auto;accent-color:var(--accent)}
+  .share-name{flex:1;font-size:15px;font-weight:600;line-height:1.25}
+  .share-cat{font-size:12px;color:var(--muted);font-weight:500}
+  .share-cost{font-size:14px;font-weight:700;white-space:nowrap}
+  .share-empty{color:var(--muted);font-size:14px;text-align:center;padding:24px 0;line-height:1.5}
 </style>
 </head>
 <body>
@@ -522,6 +541,14 @@
       </span>
       <span class="switch-arrow">→</span>
     </button>
+    <button class="friend-card" id="shareOpen">
+      <span class="friend-ic">👥</span>
+      <span class="friend-txt">
+        <span class="friend-title">Compare bills with a friend</span>
+        <span class="friend-sub">Share a private Fend Card — see who's overpaying.</span>
+      </span>
+      <span class="friend-arrow">→</span>
+    </button>
     <button class="wl-link" id="wlOpen">What's left after your bills? →</button>
 
     <div class="pills" id="pills">
@@ -662,6 +689,16 @@
     <button class="wl-link" id="dtCancelBtn" style="display:none">How do I cancel this? →</button>
     <button class="save" id="dtEditBtn">Edit</button>
     <button class="cancel-toggle" id="dtCloseBtn">Close</button>
+  </div>
+
+  <!-- Fend Card share sheet -->
+  <div class="sheet" id="shareSheet">
+    <div class="grab"></div>
+    <h2>Make a Fend Card</h2>
+    <div class="share-intro">Tick the bills you'd like to share. We make a private link with <b>only the prices you pick</b> — no account, no name, nothing else. Your friend compares it to their own bills.</div>
+    <div id="shareList"></div>
+    <button class="save" id="shareCreateBtn">Create &amp; share card</button>
+    <button class="cancel-toggle" id="shareCloseBtn">Cancel</button>
   </div>
 
   <!-- Add / edit sheet -->
@@ -2022,7 +2059,61 @@
     document.getElementById("sheet").classList.remove("show");
   }
   document.getElementById("addBtn").addEventListener("click",function(){openSheet(null);});
-  document.getElementById("scrim").addEventListener("click",function(){closeSheet();closeDetail();});
+  document.getElementById("scrim").addEventListener("click",function(){closeSheet();closeDetail();closeShareSheet();});
+
+  // ---- Fend Card: compare bills with a friend (share a link, never sync accounts) ----
+  var _shareActive = [];
+  function _esc(t){ return String(t).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+  function openShareSheet(){
+    _shareActive = subs.filter(function(s){return s.status!=="cancelled" && monthlyCost(s)>0;});
+    var list = document.getElementById("shareList");
+    if(_shareActive.length===0){
+      list.innerHTML = '<div class="share-empty">Add a bill or two first, then you can share a Fend Card to compare.</div>';
+    } else {
+      list.innerHTML = _shareActive.map(function(s,idx){
+        var meta = CAT_META[s.cat] || {label:s.cat};
+        return '<label class="share-row">'+
+          '<input type="checkbox" class="share-cb" data-idx="'+idx+'" checked>'+
+          '<span class="share-name">'+_esc(s.name)+'<br><span class="share-cat">'+_esc(meta.label||s.cat)+'</span></span>'+
+          '<span class="share-cost">'+money(monthlyCost(s))+'/mo</span>'+
+          '</label>';
+      }).join("");
+    }
+    document.getElementById("scrim").classList.add("show");
+    document.getElementById("shareSheet").classList.add("show");
+  }
+  function closeShareSheet(){
+    document.getElementById("scrim").classList.remove("show");
+    document.getElementById("shareSheet").classList.remove("show");
+  }
+  function createFendCard(){
+    var boxes = document.querySelectorAll("#shareList .share-cb");
+    var items = [];
+    boxes.forEach(function(b){
+      if(b.checked){
+        var s = _shareActive[Number(b.dataset.idx)];
+        if(s){ items.push({c:s.cat, n:s.name, p:Math.round(monthlyCost(s)*100)/100}); }
+      }
+    });
+    if(items.length===0){ alert("Pick at least one bill to share."); return; }
+    var payload = {v:1, r:(REGION==="uk"?"uk":"ie"), i:items};
+    var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
+                .replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+    var url = "https://getfendapp.com/compare.html#d=" + b64;
+    var txt = "I track my bills with Fend — here's a private card of mine. Add yours and see who's overpaying:";
+    closeShareSheet();
+    if(navigator.share){
+      navigator.share({title:"My Fend Card", text:txt, url:url}).catch(function(){});
+    } else if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(function(){ alert("Link copied — paste it to your friend:\n\n"+url); },
+        function(){ prompt("Copy this link and send it to your friend:", url); });
+    } else {
+      prompt("Copy this link and send it to your friend:", url);
+    }
+  }
+  document.getElementById("shareOpen").addEventListener("click", openShareSheet);
+  document.getElementById("shareCreateBtn").addEventListener("click", createFendCard);
+  document.getElementById("shareCloseBtn").addEventListener("click", closeShareSheet);
 
   // ---- Save ----
   document.getElementById("saveBtn").addEventListener("click",function(){
