@@ -47,7 +47,16 @@
   .getfend a{display:inline-block;background:var(--accent);color:#04150f;font-weight:800;font-size:15px;
     padding:13px 26px;border-radius:12px;text-decoration:none}
   .muted{color:var(--muted);font-size:12.5px;text-align:center;margin-top:18px;line-height:1.5}
-  #results{margin-top:4px}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:12px 0 2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{display:flex;align-items:center;gap:7px;flex:0 0 auto;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:999px;padding:6px 13px 6px 6px;cursor:pointer;font-family:inherit}
+  .chip.sel{border-color:var(--accent);background:rgba(16,185,129,.14)}
+  .chip-ic{width:24px;height:24px;border-radius:7px;overflow:hidden;position:relative;flex:0 0 auto;background:#fff}
+  .chip-ic img{width:100%;height:100%;object-fit:contain;display:block}
+  .chip-fb{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:800}
+  .chip-nm{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap}
+  .chip-hint{font-size:12px;color:var(--muted);margin-top:8px}
 </style>
 </head>
 <body>
@@ -64,6 +73,67 @@
   };
   var app = document.getElementById("app");
   var DATA = null, SYM = "€", REGION = "ie";
+
+  // ---- Supplier logo chips (same logo system as the app) ----
+  var LOGODEV_KEY = "pk_S6tVH5XIR9GFJvfde9ciIQ";
+  function logoP(d){ return "https://img.logo.dev/"+d+"?token="+LOGODEV_KEY+"&size=128"; }
+  function logoB(d){ return "https://www.google.com/s2/favicons?domain="+d+"&sz=128"; }
+  function initOf(n){ var p=n.replace(/[^a-zA-Z0-9 ]/g,"").trim().split(/\s+/); return ((p[0]?p[0][0]:"")+(p[1]?p[1][0]:(p[0]&&p[0][1]?p[0][1]:""))).toUpperCase(); }
+  function colOf(n){ var h=0,i; for(i=0;i<n.length;i++) h=n.charCodeAt(i)+((h<<5)-h); var c=["#10b981","#3b82f6","#8b5cf6","#ef4444","#f59e0b","#ec4899","#0ea5e9","#14b8a6"]; return c[Math.abs(h)%c.length]; }
+  window.logoErr = function(img){
+    if(img.getAttribute("data-t")!=="1"){ img.setAttribute("data-t","1"); img.src=img.getAttribute("data-bk"); return; }
+    img.style.display="none"; var fb=img.parentNode.querySelector(".chip-fb"); if(fb) fb.style.display="flex";
+  };
+  var SUP = {
+    ie:{
+      streaming:[["Netflix","netflix.com"],["Disney+","disneyplus.com"],["Spotify","spotify.com"],["Prime Video","primevideo.com"],["YouTube Premium","youtube.com"],["Sky","sky.ie"]],
+      software:[["iCloud","icloud.com"],["Google One","one.google.com"],["Microsoft 365","microsoft.com"],["Adobe","adobe.com"],["ChatGPT Plus","openai.com"],["Dropbox","dropbox.com"]],
+      energy:[["Electric Ireland","electricireland.ie"],["Bord Gáis Energy","bordgaisenergy.ie"],["SSE Airtricity","sseairtricity.com"],["Energia","energia.ie"],["Flogas","flogas.ie"],["Pinergy","pinergy.ie"],["PrepayPower","prepaypower.ie"],["Yuno Energy","yunoenergy.ie"]],
+      broadband:[["Eir","eir.ie"],["Virgin Media","virginmedia.ie"],["Sky Ireland","sky.ie"],["Vodafone","vodafone.ie"],["Three","three.ie"],["Digiweb","digiweb.ie"],["Pure Telecom","puretelecom.ie"]],
+      mobile:[["GoMo","gomo.ie"],["Eir","eir.ie"],["Vodafone","vodafone.ie"],["Three","three.ie"],["48","48.ie"],["Tesco Mobile","tescomobile.ie"],["An Post Mobile","anpost.com"],["Clear Mobile","clearmobile.ie"],["Lyca","lycamobile.ie"]],
+      insurance_car:[["AXA","axa.ie"],["Aviva","aviva.ie"],["Allianz","allianz.ie"],["Zurich","zurich.ie"],["Liberty","libertyinsurance.ie"],["FBD","fbd.ie"],["123.ie","123.ie"],["Chill","chill.ie"]],
+      insurance_home:[["AXA","axa.ie"],["Aviva","aviva.ie"],["Allianz","allianz.ie"],["Zurich","zurich.ie"],["FBD","fbd.ie"],["Liberty","libertyinsurance.ie"]],
+      insurance_health:[["VHI","vhi.ie"],["Laya Healthcare","layahealthcare.ie"],["Irish Life Health","irishlifehealth.ie"]],
+      mortgage:[["AIB","aib.ie"],["Bank of Ireland","bankofireland.com"],["Permanent TSB","permanenttsb.ie"],["Avant Money","avantmoney.ie"],["Haven","havenmortgages.ie"],["EBS","ebs.ie"],["ICS","icsmortgages.ie"]],
+      waste:[["Panda","panda.ie"],["Greyhound","greyhound.ie"],["Thorntons","thorntons-recycling.ie"],["City Bin","citybin.ie"],["KWD","kwd.ie"],["Barna","barnarecycling.ie"]]
+    },
+    uk:{
+      streaming:[["Netflix","netflix.com"],["Disney+","disneyplus.com"],["Spotify","spotify.com"],["Prime Video","primevideo.com"],["NOW","nowtv.com"],["Sky","sky.com"]],
+      software:[["iCloud","icloud.com"],["Google One","one.google.com"],["Microsoft 365","microsoft.com"],["Adobe","adobe.com"],["ChatGPT Plus","openai.com"],["Dropbox","dropbox.com"]],
+      energy:[["British Gas","britishgas.co.uk"],["Octopus Energy","octopus.energy"],["EDF","edfenergy.com"],["E.ON Next","eonnext.com"],["ScottishPower","scottishpower.co.uk"],["OVO","ovoenergy.com"],["Utilita","utilita.co.uk"]],
+      broadband:[["BT","bt.com"],["Sky","sky.com"],["Virgin Media","virginmedia.com"],["TalkTalk","talktalk.co.uk"],["Plusnet","plus.net"],["NOW Broadband","nowtv.com"]],
+      mobile:[["EE","ee.co.uk"],["O2","o2.co.uk"],["Vodafone","vodafone.co.uk"],["Three","three.co.uk"],["giffgaff","giffgaff.com"],["Tesco Mobile","tescomobile.com"],["Smarty","smarty.co.uk"],["VOXI","voxi.co.uk"],["iD Mobile","idmobile.co.uk"]],
+      insurance_car:[["Direct Line","directline.com"],["Admiral","admiral.com"],["Aviva","aviva.co.uk"],["Churchill","churchill.com"],["Hastings Direct","hastingsdirect.com"],["LV","lv.com"],["esure","esure.com"]],
+      insurance_home:[["Direct Line","directline.com"],["Admiral","admiral.com"],["Aviva","aviva.co.uk"],["Churchill","churchill.com"],["LV","lv.com"]],
+      insurance_health:[["Bupa","bupa.co.uk"],["AXA Health","axahealth.co.uk"],["Vitality","vitality.co.uk"]],
+      mortgage:[["Halifax","halifax.co.uk"],["Nationwide","nationwide.co.uk"],["Barclays","barclays.co.uk"],["HSBC","hsbc.co.uk"],["Lloyds","lloydsbank.com"],["NatWest","natwest.com"],["Santander","santander.co.uk"],["Skipton","skipton.co.uk"]],
+      water:[["Thames Water","thameswater.co.uk"],["Severn Trent","stwater.co.uk"],["United Utilities","unitedutilities.com"],["Anglian Water","anglianwater.co.uk"],["Yorkshire Water","yorkshirewater.com"],["Southern Water","southernwater.co.uk"]]
+    }
+  };
+  function chipsFor(cat, idx){
+    var reg = SUP[REGION] || {};
+    var list = reg[cat];
+    if((cat==="electricity"||cat==="gas") && !list) list = reg.energy;
+    if(!list || !list.length) return "";
+    var html = list.map(function(s){
+      return '<button type="button" class="chip" data-idx="'+idx+'" data-name="'+esc(s[0])+'">'+
+        '<span class="chip-ic"><img src="'+logoP(s[1])+'" data-bk="'+logoB(s[1])+'" onerror="logoErr(this)" alt="">'+
+        '<span class="chip-fb" style="background:'+colOf(s[0])+'">'+esc(initOf(s[0]))+'</span></span>'+
+        '<span class="chip-nm">'+esc(s[0])+'</span></button>';
+    }).join("");
+    return '<div class="chips">'+html+'</div><div class="chip-hint">Tap yours, or type it below</div>';
+  }
+  // Fill the provider box when a chip is tapped
+  app.addEventListener("click", function(e){
+    var chip = e.target && e.target.closest ? e.target.closest(".chip") : null;
+    if(!chip) return;
+    var idx = chip.getAttribute("data-idx"), nm = chip.getAttribute("data-name");
+    var input = app.querySelector('.yname[data-idx="'+idx+'"]');
+    if(input) input.value = nm;
+    var sibs = chip.parentNode.querySelectorAll(".chip"), i;
+    for(i=0;i<sibs.length;i++) sibs[i].classList.remove("sel");
+    chip.classList.add("sel");
+  });
 
   function b64decode(s){
     s = s.replace(/-/g,"+").replace(/_/g,"/");
@@ -99,9 +169,10 @@
       return '<div class="row">'+
         '<div class="rlabel">'+esc(label)+'</div>'+
         '<div class="rtheirs">Their '+esc(it.n)+': <b>'+money(it.p)+'/mo</b></div>'+
+        chipsFor(it.c, idx)+
         '<div class="inps">'+
-          '<input class="yname" data-idx="'+idx+'" type="text" placeholder="Your provider (optional)">'+
-          '<input class="yprice" data-idx="'+idx+'" type="number" inputmode="decimal" placeholder="Your \u20ac/mo">'+
+          '<input class="yname" data-idx="'+idx+'" type="text" placeholder="Your provider">'+
+          '<input class="yprice" data-idx="'+idx+'" type="number" inputmode="decimal" placeholder="Your '+SYM+'/mo">'+
         '</div>'+
       '</div>';
     }).join("");
