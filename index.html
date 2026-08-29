@@ -721,6 +721,7 @@
         <option value="insurance_home">Home insurance</option>
         <option value="insurance_health">Health insurance</option>
         <option value="mortgage">Mortgage</option>
+        <option value="loan">Loan / repayment</option>
         <option value="water">Water</option>
         <option value="waste">Bins &amp; waste</option>
         <option value="other">Other</option>
@@ -769,6 +770,7 @@
     </div>
 
     <button class="save" id="saveBtn">Save</button>
+    <button class="cancel-toggle" id="sheetCancelBtn">Cancel</button>
     <button class="cancel-toggle" id="cancelToggleBtn" style="display:none"></button>
     <button class="delete" id="deleteBtn" style="display:none">Delete subscription</button>
   </div>
@@ -1090,6 +1092,7 @@
     insurance_home:{label:"Home insurance",color:"#6366f1"},
     insurance_health:{label:"Health insurance",color:"#14b8a6"},
     mortgage:{label:"Mortgage",color:"#10b981"},
+    loan:{label:"Loan / repayment",color:"#f97316"},
     water:{label:"Water",color:"#0ea5e9"},
     waste:{label:"Bins & waste",color:"#9ca3af"},
     other:{label:"Other",color:"#6b7280"}
@@ -2060,6 +2063,7 @@
   }
   document.getElementById("addBtn").addEventListener("click",function(){openSheet(null);});
   document.getElementById("scrim").addEventListener("click",function(){closeSheet();closeDetail();closeShareSheet();});
+  document.getElementById("sheetCancelBtn").addEventListener("click", closeSheet);
 
   // ---- Fend Card: compare bills with a friend (share a link, never sync accounts) ----
   var _shareActive = [];
