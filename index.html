@@ -394,7 +394,16 @@
   .share-name{flex:1;font-size:15px;font-weight:600;line-height:1.25}
   .share-cat{font-size:12px;color:var(--muted);font-weight:500}
   .share-cost{font-size:14px;font-weight:700;white-space:nowrap}
-  .share-empty{color:var(--muted);font-size:14px;text-align:center;padding:24px 0;line-height:1.5}
+  .share-empty{color:var(--muted);font-size:14px;text-align:center;padding:24px 0;line-height:1.5}  .split-bill{font-size:15px;color:#cfcfd4;margin-bottom:18px;line-height:1.4}
+  .split-bill b{color:var(--text)}
+  .split-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;font-size:15px;font-weight:600}
+  .split-stepper{display:flex;align-items:center;gap:16px}
+  .split-stepper button{width:42px;height:42px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);color:var(--text);font-size:22px;font-weight:700;font-family:inherit;cursor:pointer;line-height:1}
+  .split-stepper button:active{opacity:.65}
+  #splitWays{font-size:20px;font-weight:800;min-width:26px;text-align:center}
+  .split-result{text-align:center;background:var(--surface-2);border-radius:16px;padding:22px;margin-bottom:14px}
+  .split-each{font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1}
+  .split-sub{font-size:13px;color:var(--muted);margin-top:6px}
 </style>
 </head>
 <body>
@@ -687,6 +696,7 @@
     <div class="dt-stats" id="dtStats"></div>
     <div id="dtCompare"></div>
     <button class="wl-link" id="dtCancelBtn" style="display:none">How do I cancel this? →</button>
+    <button class="wl-link" id="dtSplitBtn">Split this bill 👥</button>
     <button class="save" id="dtEditBtn">Edit</button>
     <button class="cancel-toggle" id="dtCloseBtn">Close</button>
   </div>
@@ -699,6 +709,23 @@
     <div id="shareList"></div>
     <button class="save" id="shareCreateBtn">Create &amp; share card</button>
     <button class="cancel-toggle" id="shareCloseBtn">Cancel</button>
+  </div>
+
+  <!-- Split this bill sheet -->
+  <div class="sheet" id="splitSheet">
+    <div class="grab"></div>
+    <h2>Split this bill</h2>
+    <div class="split-bill" id="splitBillName"></div>
+    <div class="split-row"><span>Split how many ways?</span>
+      <div class="split-stepper">
+        <button id="splitMinus" type="button">−</button>
+        <span id="splitWays">2</span>
+        <button id="splitPlus" type="button">+</button>
+      </div>
+    </div>
+    <div class="split-result" id="splitResult"></div>
+    <button class="save" id="splitShareBtn">Send each person their share →</button>
+    <button class="cancel-toggle" id="splitCloseBtn">Close</button>
   </div>
 
   <!-- Add / edit sheet -->
@@ -2062,8 +2089,45 @@
     document.getElementById("sheet").classList.remove("show");
   }
   document.getElementById("addBtn").addEventListener("click",function(){openSheet(null);});
-  document.getElementById("scrim").addEventListener("click",function(){closeSheet();closeDetail();closeShareSheet();});
+  document.getElementById("scrim").addEventListener("click",function(){closeSheet();closeDetail();closeShareSheet();closeSplitSheet();});
   document.getElementById("sheetCancelBtn").addEventListener("click", closeSheet);
+
+  // ---- Split this bill (calculate shares, send each person their part) ----
+  var _splitSub = null, _splitWays = 2;
+  function openSplitSheet(id){
+    var s = subs.filter(function(x){return String(x.id)===String(id);})[0];
+    if(!s) return;
+    _splitSub = s; _splitWays = 2;
+    document.getElementById("splitBillName").innerHTML = "Splitting <b>"+_esc(s.name)+"</b> — "+money(monthlyCost(s))+"/mo";
+    renderSplit();
+    document.getElementById("scrim").classList.add("show");
+    document.getElementById("splitSheet").classList.add("show");
+  }
+  function renderSplit(){
+    document.getElementById("splitWays").textContent = _splitWays;
+    var each = monthlyCost(_splitSub)/_splitWays;
+    document.getElementById("splitResult").innerHTML =
+      '<div class="split-each">'+money(each)+'</div><div class="split-sub">each per month · split '+_splitWays+' ways</div>';
+  }
+  function closeSplitSheet(){
+    document.getElementById("scrim").classList.remove("show");
+    document.getElementById("splitSheet").classList.remove("show");
+  }
+  document.getElementById("splitMinus").addEventListener("click",function(){ if(_splitWays>2){_splitWays--;renderSplit();} });
+  document.getElementById("splitPlus").addEventListener("click",function(){ if(_splitWays<12){_splitWays++;renderSplit();} });
+  document.getElementById("splitCloseBtn").addEventListener("click", closeSplitSheet);
+  document.getElementById("splitShareBtn").addEventListener("click",function(){
+    if(!_splitSub) return;
+    var each = monthlyCost(_splitSub)/_splitWays;
+    var txt = "Our "+_splitSub.name+" bill is "+money(monthlyCost(_splitSub))+"/mo — split "+_splitWays+" ways, your share is "+money(each)+"/mo. Tracked with Fend.";
+    var url = "https://getfendapp.com";
+    if(navigator.share){ navigator.share({title:"Bill split", text:txt, url:url}).catch(function(){}); }
+    else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt+" "+url).then(function(){alert("Copied — send it to your housemate:\n\n"+txt);},function(){prompt("Copy & send:",txt+" "+url);}); }
+    else { prompt("Copy & send:",txt+" "+url); }
+  });
+  document.getElementById("dtSplitBtn").addEventListener("click",function(){
+    var id = detailId; closeDetail(); openSplitSheet(id);
+  });
 
   // ---- Fend Card: compare bills with a friend (share a link, never sync accounts) ----
   var _shareActive = [];
