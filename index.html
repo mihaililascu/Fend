@@ -403,7 +403,12 @@
   #splitWays{font-size:20px;font-weight:800;min-width:26px;text-align:center}
   .split-result{text-align:center;background:var(--surface-2);border-radius:16px;padding:22px;margin-bottom:14px}
   .split-each{font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1}
-  .split-sub{font-size:13px;color:var(--muted);margin-top:6px}
+  .split-sub{font-size:13px;color:var(--muted);margin-top:6px}  .split-pay{margin:0 0 14px}
+  .split-pay button{width:100%;background:none;border:1px dashed var(--line);color:var(--muted);font-size:13.5px;font-weight:600;padding:12px;border-radius:12px;cursor:pointer;font-family:inherit}
+  .split-pay button:active{background:var(--surface-2)}
+  .paylink-set{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface-2);border-radius:12px;padding:12px 14px;font-size:13.5px}
+  .paylink-set span{color:#cfcfd4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .paylink-set b{color:var(--accent);font-weight:700;cursor:pointer;flex:0 0 auto}
 </style>
 </head>
 <body>
@@ -724,6 +729,7 @@
       </div>
     </div>
     <div class="split-result" id="splitResult"></div>
+    <div class="split-pay" id="splitPay"></div>
     <button class="save" id="splitShareBtn">Send each person their share →</button>
     <button class="cancel-toggle" id="splitCloseBtn">Close</button>
   </div>
@@ -2100,8 +2106,28 @@
     _splitSub = s; _splitWays = 2;
     document.getElementById("splitBillName").innerHTML = "Splitting <b>"+_esc(s.name)+"</b> — "+money(monthlyCost(s))+"/mo";
     renderSplit();
+    renderSplitPay();
     document.getElementById("scrim").classList.add("show");
     document.getElementById("splitSheet").classList.add("show");
+  }
+  function getPayLink(){ try{ return localStorage.getItem("fend_paylink")||""; }catch(e){ return ""; } }
+  function setPayLink(v){ try{ localStorage.setItem("fend_paylink", v||""); }catch(e){} }
+  function askPayLink(){
+    var v = prompt("Paste your Revolut.Me or PayPal.Me link so people can pay you directly:\n(e.g. https://revolut.me/yourname)", getPayLink());
+    if(v===null) return;
+    v = v.trim();
+    if(v && !/^https?:\/\//i.test(v)){ alert("That doesn't look right — a payment link should start with https://"); return; }
+    setPayLink(v); renderSplitPay();
+  }
+  function renderSplitPay(){
+    var el = document.getElementById("splitPay");
+    if(getPayLink()){
+      el.innerHTML = '<div class="paylink-set"><span>💸 Your pay link is attached</span><b id="splitPayEdit">Change</b></div>';
+      document.getElementById("splitPayEdit").addEventListener("click", askPayLink);
+    } else {
+      el.innerHTML = '<button type="button" id="splitPayAdd">＋ Add your Revolut / PayPal link (optional)</button>';
+      document.getElementById("splitPayAdd").addEventListener("click", askPayLink);
+    }
   }
   function renderSplit(){
     document.getElementById("splitWays").textContent = _splitWays;
@@ -2119,7 +2145,10 @@
   document.getElementById("splitShareBtn").addEventListener("click",function(){
     if(!_splitSub) return;
     var each = monthlyCost(_splitSub)/_splitWays;
-    var txt = "Our "+_splitSub.name+" bill is "+money(monthlyCost(_splitSub))+"/mo — split "+_splitWays+" ways, your share is "+money(each)+"/mo. Tracked with Fend.";
+    var txt = "Our "+_splitSub.name+" bill is "+money(monthlyCost(_splitSub))+"/mo — split "+_splitWays+" ways, your share is "+money(each)+"/mo.";
+    var link = getPayLink();
+    if(link) txt += "\nPay me here: "+link;
+    txt += "\nTracked with Fend.";
     var url = "https://getfendapp.com";
     if(navigator.share){ navigator.share({title:"Bill split", text:txt, url:url}).catch(function(){}); }
     else if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt+" "+url).then(function(){alert("Copied — send it to your housemate:\n\n"+txt);},function(){prompt("Copy & send:",txt+" "+url);}); }
