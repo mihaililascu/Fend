@@ -408,7 +408,15 @@
   .split-pay button:active{background:var(--surface-2)}
   .paylink-set{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface-2);border-radius:12px;padding:12px 14px;font-size:13.5px}
   .paylink-set span{color:#cfcfd4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .paylink-set b{color:var(--accent);font-weight:700;cursor:pointer;flex:0 0 auto}
+  .paylink-set b{color:var(--accent);font-weight:700;cursor:pointer;flex:0 0 auto}  .pl-intro{font-size:14px;color:#cfcfd4;line-height:1.45;margin-bottom:14px}
+  .pl-steps{background:var(--surface-2);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+  .pl-h{font-size:14px;font-weight:800;margin:12px 0 4px}
+  .pl-h:first-child{margin-top:0}
+  .pl-b{font-size:13.5px;color:#cfcfd4;line-height:1.5}
+  .pl-b b{color:var(--text)}
+  .pl-input{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);font-family:inherit;font-size:15px;padding:14px;border-radius:12px;margin-bottom:12px}
+  .pl-open{display:inline-block;margin:8px 0 4px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.35);color:var(--accent);font-family:inherit;font-size:13px;font-weight:700;padding:8px 14px;border-radius:999px;cursor:pointer}
+  .pl-open:active{opacity:.75}
 </style>
 </head>
 <body>
@@ -732,6 +740,24 @@
     <div class="split-pay" id="splitPay"></div>
     <button class="save" id="splitShareBtn">Send each person their share →</button>
     <button class="cancel-toggle" id="splitCloseBtn">Close</button>
+  </div>
+
+  <!-- Payment link help + input sheet -->
+  <div class="sheet" id="paylinkSheet">
+    <div class="grab"></div>
+    <h2>Add your payment link</h2>
+    <p class="pl-intro">A payment link lets housemates pay you your share in one tap — straight into your Revolut or PayPal. Fend never sees the money; it just adds your link to the message you send.</p>
+    <div class="pl-steps">
+      <div class="pl-h">📲 Revolut</div>
+      <div class="pl-b">Open the Revolut app → tap <b>Payments</b> → <b>Request</b> → create a request / payment link. Your link looks like <b>revolut.me/yourname</b>. Copy it and paste it below.</div>
+      <button type="button" class="pl-open" id="openRevolut">Open Revolut →</button>
+      <div class="pl-h">💙 PayPal</div>
+      <div class="pl-b">Go to <b>paypal.me</b>, sign in, and claim your link. It looks like <b>paypal.me/yourname</b>. Copy and paste it below.</div>
+      <button type="button" class="pl-open" id="openPaypal">Open PayPal.me →</button>
+    </div>
+    <input class="pl-input" id="paylinkInput" type="url" inputmode="url" placeholder="https://revolut.me/yourname">
+    <button class="save" id="paylinkSaveBtn">Save link</button>
+    <button class="cancel-toggle" id="paylinkCancelBtn">Cancel</button>
   </div>
 
   <!-- Add / edit sheet -->
@@ -2095,7 +2121,7 @@
     document.getElementById("sheet").classList.remove("show");
   }
   document.getElementById("addBtn").addEventListener("click",function(){openSheet(null);});
-  document.getElementById("scrim").addEventListener("click",function(){closeSheet();closeDetail();closeShareSheet();closeSplitSheet();});
+  document.getElementById("scrim").addEventListener("click",function(){closeSheet();closeDetail();closeShareSheet();closeSplitSheet();closePaylinkSheet();});
   document.getElementById("sheetCancelBtn").addEventListener("click", closeSheet);
 
   // ---- Split this bill (calculate shares, send each person their part) ----
@@ -2113,12 +2139,19 @@
   function getPayLink(){ try{ return localStorage.getItem("fend_paylink")||""; }catch(e){ return ""; } }
   function setPayLink(v){ try{ localStorage.setItem("fend_paylink", v||""); }catch(e){} }
   function askPayLink(){
-    var v = prompt("Paste your Revolut.Me or PayPal.Me link so people can pay you directly:\n(e.g. https://revolut.me/yourname)", getPayLink());
-    if(v===null) return;
-    v = v.trim();
-    if(v && !/^https?:\/\//i.test(v)){ alert("That doesn't look right — a payment link should start with https://"); return; }
-    setPayLink(v); renderSplitPay();
+    document.getElementById("paylinkInput").value = getPayLink();
+    document.getElementById("scrim").classList.add("show");
+    document.getElementById("paylinkSheet").classList.add("show");
   }
+  function closePaylinkSheet(){ document.getElementById("paylinkSheet").classList.remove("show"); }
+  document.getElementById("paylinkSaveBtn").addEventListener("click",function(){
+    var v = (document.getElementById("paylinkInput").value||"").trim();
+    if(v && !/^https?:\/\//i.test(v)){ alert("A payment link should start with https:// — for example https://revolut.me/yourname"); return; }
+    setPayLink(v); renderSplitPay(); closePaylinkSheet();
+  });
+  document.getElementById("paylinkCancelBtn").addEventListener("click", closePaylinkSheet);
+  document.getElementById("openRevolut").addEventListener("click",function(){ window.open("https://revolut.me","_blank","noopener"); });
+  document.getElementById("openPaypal").addEventListener("click",function(){ window.open("https://www.paypal.com/paypalme","_blank","noopener"); });
   function renderSplitPay(){
     var el = document.getElementById("splitPay");
     if(getPayLink()){
