@@ -421,7 +421,13 @@
   .dt-ref-k{font-size:12px;color:var(--muted);font-weight:600}
   .dt-ref-v{font-size:16px;font-weight:700;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .dt-ref-copy{flex:0 0 auto;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.35);color:var(--accent);font-family:inherit;font-size:13px;font-weight:700;padding:9px 15px;border-radius:999px;cursor:pointer}
-  .dt-ref-copy:active{opacity:.7}
+  .dt-ref-copy:active{opacity:.7}  .contract-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(245,158,11,.14),rgba(245,158,11,.03));border:1px solid rgba(245,158,11,.4);border-radius:16px;padding:14px 16px;margin-bottom:14px}
+  .cc-ic{font-size:22px;flex:0 0 auto}
+  .cc-title{font-size:15px;font-weight:800;color:#fbbf24}
+  .cc-sub{font-size:13px;color:#cfcfd4;margin-top:2px;line-height:1.4}
+  .dt-contract{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 14px}
+  .dt-contract.warn{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.08)}
+  .dt-contract .dt-ref-k{margin-bottom:2px}
 </style>
 </head>
 <body>
@@ -568,6 +574,7 @@
     <div id="list"></div>
 
     <div id="dueSoonCard" style="display:none"></div>
+    <div id="contractCard" style="display:none"></div>
     <div id="billCheckCard" style="display:none"></div>
     <button class="switch-card" id="switchOpen">
       <span class="switch-ic">💡</span>
@@ -713,6 +720,7 @@
     <div class="dt-big"><span id="dtCost"></span><small id="dtCycle"></small></div>
     <div class="dt-stats" id="dtStats"></div>
     <div id="dtRef"></div>
+    <div id="dtContract"></div>
     <div id="dtCompare"></div>
     <button class="wl-link" id="dtCancelBtn" style="display:none">How do I cancel this? →</button>
     <button class="wl-link" id="dtOpenBtn">Open service →</button>
@@ -838,6 +846,11 @@
       <input id="fDate" type="date" />
     </div>
 
+    <div class="field">
+      <label>Contract ends <span style="opacity:.55;font-weight:500">(optional)</span></label>
+      <input id="fContractEnd" type="date" />
+    </div>
+
     <div class="toggle-row" id="trialToggle">
       <span>Free trial?</span>
       <div class="sw" id="trialSw"></div>
@@ -934,7 +947,7 @@
   function fromRow(r){
     return {id:r.id,name:r.name,cost:Number(r.cost),cycle:r.cycle,cat:r.category,
       trial:!!r.is_trial,trialEnd:r.trial_end_date,date:r.renewal_date,status:r.status,
-      reference:r.reference||"",reference2:r.reference2||"",reference3:r.reference3||"",created:r.created_at};
+      reference:r.reference||"",reference2:r.reference2||"",reference3:r.reference3||"",contractEnd:r.contract_end||"",created:r.created_at};
   }
   function loadSubs(){
     sb.from("subscriptions").select("*").order("renewal_date",{ascending:true}).then(function(res){
@@ -1670,7 +1683,25 @@
     card.innerHTML = html+'</div>';
   }
 
-  function renderAll(){ renderHero(); renderSpendBreakdown(); renderList(); renderDueSoon(); renderBillCheck(); renderChecklist(); }
+  function renderContract(){
+    var card = document.getElementById("contractCard");
+    if(filter!=="all"){ card.style.display="none"; return; }
+    var ending = subs.filter(function(s){
+      if(s.status==="cancelled" || !s.contractEnd) return false;
+      var d=daysUntil(s.contractEnd);
+      return d<=31 && d>=-14;
+    }).sort(function(a,b){ return daysUntil(a.contractEnd)-daysUntil(b.contractEnd); });
+    if(ending.length===0){ card.style.display="none"; return; }
+    card.style.display="block";
+    var s=ending[0], cd=daysUntil(s.contractEnd);
+    var when = cd<0 ? "has ended" : (cd===0 ? "ends today" : "ends in "+cd+" days");
+    var more = ending.length>1 ? " (+"+(ending.length-1)+" more)" : "";
+    card.className="contract-card";
+    card.innerHTML='<div class="cc-ic">⚠️</div><div><div class="cc-title">Contract '+(cd<0?"ended":"ending soon")+'</div>'+
+      '<div class="cc-sub"><b>'+esc(s.name)+'</b> '+when+more+' — compare before you roll onto a higher rate.</div></div>';
+  }
+
+  function renderAll(){ renderHero(); renderSpendBreakdown(); renderList(); renderDueSoon(); renderContract(); renderBillCheck(); renderChecklist(); }
 
   // ---- Calendar ----
   var calOffset = 0; // months from current month
@@ -2073,6 +2104,14 @@
     if(rm.second && s.reference2) attachCopy("dtRefCopy2", s.reference2);
     if(rm.third && s.reference3) attachCopy("dtRefCopy3", s.reference3);
 
+    var contractEl=document.getElementById("dtContract");
+    if(s.contractEnd){
+      var cd=daysUntil(s.contractEnd);
+      var warn=cd<=31;
+      var ctxt = cd<0 ? "Contract ended "+(-cd)+" days ago" : (cd===0?"Contract ends today":"Contract ends in "+cd+" days");
+      contractEl.innerHTML='<div class="dt-contract'+(warn?' warn':'')+'"><div class="dt-ref-k">'+(warn?'⚠️ ':'📅 ')+'Contract</div><div class="dt-ref-v" style="font-size:15px;letter-spacing:0">'+esc(ctxt)+(warn?' — time to compare & switch':'')+'</div></div>';
+    } else { contractEl.innerHTML=""; }
+
     // comparison (bills only, information only)
     var cmp = document.getElementById("dtCompare");
     var b = BENCHMARKS[s.cat];
@@ -2126,6 +2165,7 @@
     document.getElementById("fRef").value="";
     document.getElementById("fRef2").value="";
     document.getElementById("fRef3").value="";
+    document.getElementById("fContractEnd").value="";
     document.getElementById("fCycle").value="monthly";
     document.getElementById("fDate").value=daysFromNow(30);
     document.getElementById("fCat").value="streaming";
@@ -2146,6 +2186,7 @@
         document.getElementById("fRef").value=s.reference||"";
         document.getElementById("fRef2").value=s.reference2||"";
         document.getElementById("fRef3").value=s.reference3||"";
+        document.getElementById("fContractEnd").value=s.contractEnd||"";
         document.getElementById("fCycle").value=s.cycle;
         document.getElementById("fDate").value=s.date;
         document.getElementById("fCat").value=s.cat;
@@ -2353,11 +2394,13 @@
     var ref=(document.getElementById("fRef").value||"").trim();
     var ref2=(document.getElementById("fRef2").value||"").trim();
     var ref3=(document.getElementById("fRef3").value||"").trim();
+    var contractEnd=document.getElementById("fContractEnd").value||null;
 
     var row={name:name,cost:cost,cycle:cycle,renewal_date:date,category:cat,
       is_trial:trialOn,trial_end_date:trialOn?trialEnd:null,reference:ref||null,
       reference2:(cat==="energy" ? (ref2||null) : null),
-      reference3:(cat==="energy" ? (ref3||null) : null)};
+      reference3:(cat==="energy" ? (ref3||null) : null),
+      contract_end:contractEnd};
 
     var btn=this; btn.disabled=true;
 
