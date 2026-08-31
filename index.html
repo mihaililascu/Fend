@@ -715,6 +715,7 @@
     <div id="dtRef"></div>
     <div id="dtCompare"></div>
     <button class="wl-link" id="dtCancelBtn" style="display:none">How do I cancel this? →</button>
+    <button class="wl-link" id="dtOpenBtn">Open service →</button>
     <button class="wl-link" id="dtSplitBtn">Split this bill 👥</button>
     <button class="save" id="dtEditBtn">Edit</button>
     <button class="cancel-toggle" id="dtCloseBtn">Close</button>
@@ -2074,6 +2075,7 @@
 
     var cancelBtn = document.getElementById("dtCancelBtn");
     cancelBtn.style.display = (s.status==="cancelled" || s.cat==="mortgage") ? "none" : "block";
+    document.getElementById("dtOpenBtn").textContent = "Open " + s.name + " →";
 
     document.getElementById("scrim").classList.add("show");
     document.getElementById("detailSheet").classList.add("show");
@@ -2216,6 +2218,16 @@
   });
   document.getElementById("dtSplitBtn").addEventListener("click",function(){
     var id = detailId; closeDetail(); openSplitSheet(id);
+  });
+  function siteUrlFor(name){
+    var d = LOGO_DOMAINS[norm(name)];
+    if(d) return "https://"+d;
+    return "https://www.google.com/search?q="+encodeURIComponent(name+" login");
+  }
+  document.getElementById("dtOpenBtn").addEventListener("click",function(){
+    var s = subs.filter(function(x){return String(x.id)===String(detailId);})[0];
+    if(!s) return;
+    window.open(siteUrlFor(s.name),"_blank","noopener");
   });
 
   // ---- Fend Card: compare bills with a friend (share a link, never sync accounts) ----
