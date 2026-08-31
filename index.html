@@ -809,6 +809,11 @@
       <input id="fRef2" placeholder="e.g. 7-digit GPRN" />
     </div>
 
+    <div class="field" id="fRef3Field" style="display:none">
+      <label id="fRef3Label">Account number <span style="opacity:.55;font-weight:500">(optional)</span></label>
+      <input id="fRef3" placeholder="e.g. supplier account number" />
+    </div>
+
     <div class="field" id="presetField">
       <label>Quick pick a supplier</label>
       <div class="preset-scroll" id="presetChips"></div>
@@ -929,7 +934,7 @@
   function fromRow(r){
     return {id:r.id,name:r.name,cost:Number(r.cost),cycle:r.cycle,cat:r.category,
       trial:!!r.is_trial,trialEnd:r.trial_end_date,date:r.renewal_date,status:r.status,
-      reference:r.reference||"",reference2:r.reference2||"",created:r.created_at};
+      reference:r.reference||"",reference2:r.reference2||"",reference3:r.reference3||"",created:r.created_at};
   }
   function loadSubs(){
     sb.from("subscriptions").select("*").order("renewal_date",{ascending:true}).then(function(res){
@@ -2062,9 +2067,11 @@
     var refHtml="";
     if(s.reference){ refHtml += refRow(rm.label, s.reference, "dtRefCopy"); }
     if(rm.second && s.reference2){ refHtml += refRow(rm.second.label, s.reference2, "dtRefCopy2"); }
+    if(rm.third && s.reference3){ refHtml += refRow(rm.third.label, s.reference3, "dtRefCopy3"); }
     refEl.innerHTML = refHtml;
     if(s.reference) attachCopy("dtRefCopy", s.reference);
     if(rm.second && s.reference2) attachCopy("dtRefCopy2", s.reference2);
+    if(rm.third && s.reference3) attachCopy("dtRefCopy3", s.reference3);
 
     // comparison (bills only, information only)
     var cmp = document.getElementById("dtCompare");
@@ -2118,6 +2125,7 @@
     document.getElementById("fCost").value="";
     document.getElementById("fRef").value="";
     document.getElementById("fRef2").value="";
+    document.getElementById("fRef3").value="";
     document.getElementById("fCycle").value="monthly";
     document.getElementById("fDate").value=daysFromNow(30);
     document.getElementById("fCat").value="streaming";
@@ -2137,6 +2145,7 @@
         document.getElementById("fCost").value=s.cost;
         document.getElementById("fRef").value=s.reference||"";
         document.getElementById("fRef2").value=s.reference2||"";
+        document.getElementById("fRef3").value=s.reference3||"";
         document.getElementById("fCycle").value=s.cycle;
         document.getElementById("fDate").value=s.date;
         document.getElementById("fCat").value=s.cat;
@@ -2304,7 +2313,7 @@
   function refMeta(cat){
     if(cat==="electricity") return {label:"MPRN (electricity)", ph:"11-digit MPRN", second:null};
     if(cat==="gas") return {label:"GPRN (gas)", ph:"7-digit GPRN", second:null};
-    if(cat==="energy") return {label:"MPRN (electricity)", ph:"11-digit MPRN", second:{label:"GPRN (gas)", ph:"7-digit GPRN"}};
+    if(cat==="energy") return {label:"MPRN (electricity)", ph:"11-digit MPRN", second:{label:"GPRN (gas)", ph:"7-digit GPRN"}, third:{label:"Account number", ph:"supplier account number"}};
     if(cat==="insurance_car"||cat==="insurance_home"||cat==="insurance_health") return {label:"Policy number", ph:"policy number", second:null};
     if(cat==="mortgage"||cat==="loan"||cat==="water"||cat==="waste") return {label:"Account number", ph:"account number", second:null};
     return {label:"Reference / account no.", ph:"account number or reference", second:null};
@@ -2321,6 +2330,14 @@
     } else {
       f2.style.display="none";
     }
+    var f3=document.getElementById("fRef3Field");
+    if(m.third){
+      document.getElementById("fRef3Label").innerHTML = esc(m.third.label)+opt;
+      document.getElementById("fRef3").placeholder = "e.g. "+m.third.ph;
+      f3.style.display="block";
+    } else {
+      f3.style.display="none";
+    }
   }
   document.getElementById("fCat").addEventListener("change",function(){ updateRefLabel(this.value); });
 
@@ -2335,10 +2352,12 @@
     var trialEnd=document.getElementById("fTrialEnd").value;
     var ref=(document.getElementById("fRef").value||"").trim();
     var ref2=(document.getElementById("fRef2").value||"").trim();
+    var ref3=(document.getElementById("fRef3").value||"").trim();
 
     var row={name:name,cost:cost,cycle:cycle,renewal_date:date,category:cat,
       is_trial:trialOn,trial_end_date:trialOn?trialEnd:null,reference:ref||null,
-      reference2:(cat==="energy" ? (ref2||null) : null)};
+      reference2:(cat==="energy" ? (ref2||null) : null),
+      reference3:(cat==="energy" ? (ref3||null) : null)};
 
     var btn=this; btn.disabled=true;
 
