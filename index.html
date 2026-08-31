@@ -804,6 +804,11 @@
       <input id="fRef" placeholder="e.g. account number" />
     </div>
 
+    <div class="field" id="fRef2Field" style="display:none">
+      <label id="fRef2Label">GPRN (gas) <span style="opacity:.55;font-weight:500">(optional)</span></label>
+      <input id="fRef2" placeholder="e.g. 7-digit GPRN" />
+    </div>
+
     <div class="field" id="presetField">
       <label>Quick pick a supplier</label>
       <div class="preset-scroll" id="presetChips"></div>
@@ -924,7 +929,7 @@
   function fromRow(r){
     return {id:r.id,name:r.name,cost:Number(r.cost),cycle:r.cycle,cat:r.category,
       trial:!!r.is_trial,trialEnd:r.trial_end_date,date:r.renewal_date,status:r.status,
-      reference:r.reference||"",created:r.created_at};
+      reference:r.reference||"",reference2:r.reference2||"",created:r.created_at};
   }
   function loadSubs(){
     sb.from("subscriptions").select("*").order("renewal_date",{ascending:true}).then(function(res){
@@ -2042,16 +2047,24 @@
         '<span class="k" style="margin:4px 0 0">'+esc(paidNote)+'</span></div>';
 
     var refEl=document.getElementById("dtRef");
-    if(s.reference){
-      var rm=refMeta(s.cat);
-      refEl.innerHTML='<div class="dt-ref"><div class="dt-ref-txt"><div class="dt-ref-k">'+esc(rm.label)+'</div><div class="dt-ref-v">'+esc(s.reference)+'</div></div><button class="dt-ref-copy" id="dtRefCopy">Copy</button></div>';
-      document.getElementById("dtRefCopy").addEventListener("click",function(){
-        var b=this;
+    var rm=refMeta(s.cat);
+    function refRow(label,val,id){
+      return '<div class="dt-ref"><div class="dt-ref-txt"><div class="dt-ref-k">'+esc(label)+'</div><div class="dt-ref-v">'+esc(val)+'</div></div><button class="dt-ref-copy" id="'+id+'">Copy</button></div>';
+    }
+    function attachCopy(id,val){
+      var b=document.getElementById(id); if(!b) return;
+      b.addEventListener("click",function(){
         if(navigator.clipboard&&navigator.clipboard.writeText){
-          navigator.clipboard.writeText(s.reference).then(function(){b.textContent="Copied!";setTimeout(function(){b.textContent="Copy";},1200);},function(){prompt("Copy your reference:",s.reference);});
-        } else { prompt("Copy your reference:",s.reference); }
+          navigator.clipboard.writeText(val).then(function(){b.textContent="Copied!";setTimeout(function(){b.textContent="Copy";},1200);},function(){prompt("Copy:",val);});
+        } else { prompt("Copy:",val); }
       });
-    } else { refEl.innerHTML=""; }
+    }
+    var refHtml="";
+    if(s.reference){ refHtml += refRow(rm.label, s.reference, "dtRefCopy"); }
+    if(rm.second && s.reference2){ refHtml += refRow(rm.second.label, s.reference2, "dtRefCopy2"); }
+    refEl.innerHTML = refHtml;
+    if(s.reference) attachCopy("dtRefCopy", s.reference);
+    if(rm.second && s.reference2) attachCopy("dtRefCopy2", s.reference2);
 
     // comparison (bills only, information only)
     var cmp = document.getElementById("dtCompare");
@@ -2104,6 +2117,7 @@
     document.getElementById("fName").value="";
     document.getElementById("fCost").value="";
     document.getElementById("fRef").value="";
+    document.getElementById("fRef2").value="";
     document.getElementById("fCycle").value="monthly";
     document.getElementById("fDate").value=daysFromNow(30);
     document.getElementById("fCat").value="streaming";
@@ -2122,6 +2136,7 @@
         document.getElementById("fName").value=s.name;
         document.getElementById("fCost").value=s.cost;
         document.getElementById("fRef").value=s.reference||"";
+        document.getElementById("fRef2").value=s.reference2||"";
         document.getElementById("fCycle").value=s.cycle;
         document.getElementById("fDate").value=s.date;
         document.getElementById("fCat").value=s.cat;
@@ -2287,17 +2302,25 @@
   // ---- Save ----
   // ---- Smart reference label (MPRN for electricity, GPRN for gas, etc.) ----
   function refMeta(cat){
-    if(cat==="electricity") return {label:"MPRN (electricity)", ph:"11-digit MPRN"};
-    if(cat==="gas") return {label:"GPRN (gas)", ph:"7-digit GPRN"};
-    if(cat==="energy") return {label:"MPRN / GPRN", ph:"MPRN and/or GPRN"};
-    if(cat==="insurance_car"||cat==="insurance_home"||cat==="insurance_health") return {label:"Policy number", ph:"policy number"};
-    if(cat==="mortgage"||cat==="loan"||cat==="water"||cat==="waste") return {label:"Account number", ph:"account number"};
-    return {label:"Reference / account no.", ph:"account number or reference"};
+    if(cat==="electricity") return {label:"MPRN (electricity)", ph:"11-digit MPRN", second:null};
+    if(cat==="gas") return {label:"GPRN (gas)", ph:"7-digit GPRN", second:null};
+    if(cat==="energy") return {label:"MPRN (electricity)", ph:"11-digit MPRN", second:{label:"GPRN (gas)", ph:"7-digit GPRN"}};
+    if(cat==="insurance_car"||cat==="insurance_home"||cat==="insurance_health") return {label:"Policy number", ph:"policy number", second:null};
+    if(cat==="mortgage"||cat==="loan"||cat==="water"||cat==="waste") return {label:"Account number", ph:"account number", second:null};
+    return {label:"Reference / account no.", ph:"account number or reference", second:null};
   }
   function updateRefLabel(cat){
-    var m=refMeta(cat);
-    document.getElementById("fRefLabel").innerHTML = esc(m.label)+' <span style="opacity:.55;font-weight:500">(optional)</span>';
+    var m=refMeta(cat), opt=' <span style="opacity:.55;font-weight:500">(optional)</span>';
+    document.getElementById("fRefLabel").innerHTML = esc(m.label)+opt;
     document.getElementById("fRef").placeholder = "e.g. "+m.ph;
+    var f2=document.getElementById("fRef2Field");
+    if(m.second){
+      document.getElementById("fRef2Label").innerHTML = esc(m.second.label)+opt;
+      document.getElementById("fRef2").placeholder = "e.g. "+m.second.ph;
+      f2.style.display="block";
+    } else {
+      f2.style.display="none";
+    }
   }
   document.getElementById("fCat").addEventListener("change",function(){ updateRefLabel(this.value); });
 
@@ -2311,9 +2334,11 @@
     var cat=document.getElementById("fCat").value;
     var trialEnd=document.getElementById("fTrialEnd").value;
     var ref=(document.getElementById("fRef").value||"").trim();
+    var ref2=(document.getElementById("fRef2").value||"").trim();
 
     var row={name:name,cost:cost,cycle:cycle,renewal_date:date,category:cat,
-      is_trial:trialOn,trial_end_date:trialOn?trialEnd:null,reference:ref||null};
+      is_trial:trialOn,trial_end_date:trialOn?trialEnd:null,reference:ref||null,
+      reference2:(cat==="energy" ? (ref2||null) : null)};
 
     var btn=this; btn.disabled=true;
 
