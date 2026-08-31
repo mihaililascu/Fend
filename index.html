@@ -416,7 +416,12 @@
   .pl-b b{color:var(--text)}
   .pl-input{width:100%;background:var(--surface-2);border:1px solid var(--line);color:var(--text);font-family:inherit;font-size:15px;padding:14px;border-radius:12px;margin-bottom:12px}
   .pl-open{display:inline-block;margin:8px 0 4px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.35);color:var(--accent);font-family:inherit;font-size:13px;font-weight:700;padding:8px 14px;border-radius:999px;cursor:pointer}
-  .pl-open:active{opacity:.75}
+  .pl-open:active{opacity:.75}  .dt-ref{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 14px;display:flex;align-items:center;gap:12px}
+  .dt-ref-txt{flex:1;min-width:0}
+  .dt-ref-k{font-size:12px;color:var(--muted);font-weight:600}
+  .dt-ref-v{font-size:16px;font-weight:700;letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dt-ref-copy{flex:0 0 auto;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.35);color:var(--accent);font-family:inherit;font-size:13px;font-weight:700;padding:9px 15px;border-radius:999px;cursor:pointer}
+  .dt-ref-copy:active{opacity:.7}
 </style>
 </head>
 <body>
@@ -707,6 +712,7 @@
     </div>
     <div class="dt-big"><span id="dtCost"></span><small id="dtCycle"></small></div>
     <div class="dt-stats" id="dtStats"></div>
+    <div id="dtRef"></div>
     <div id="dtCompare"></div>
     <button class="wl-link" id="dtCancelBtn" style="display:none">How do I cancel this? →</button>
     <button class="wl-link" id="dtSplitBtn">Split this bill 👥</button>
@@ -790,6 +796,11 @@
     <div class="field">
       <label>Name</label>
       <input id="fName" placeholder="e.g. Electric Ireland" />
+    </div>
+
+    <div class="field">
+      <label id="fRefLabel">Reference / account no. <span style="opacity:.55;font-weight:500">(optional)</span></label>
+      <input id="fRef" placeholder="e.g. account number" />
     </div>
 
     <div class="field" id="presetField">
@@ -912,7 +923,7 @@
   function fromRow(r){
     return {id:r.id,name:r.name,cost:Number(r.cost),cycle:r.cycle,cat:r.category,
       trial:!!r.is_trial,trialEnd:r.trial_end_date,date:r.renewal_date,status:r.status,
-      created:r.created_at};
+      reference:r.reference||"",created:r.created_at};
   }
   function loadSubs(){
     sb.from("subscriptions").select("*").order("renewal_date",{ascending:true}).then(function(res){
@@ -2029,6 +2040,18 @@
       '<div class="dt-stat"><span class="k">Paid so far</span><span class="v">'+paidTxt+'</span>'+
         '<span class="k" style="margin:4px 0 0">'+esc(paidNote)+'</span></div>';
 
+    var refEl=document.getElementById("dtRef");
+    if(s.reference){
+      var rm=refMeta(s.cat);
+      refEl.innerHTML='<div class="dt-ref"><div class="dt-ref-txt"><div class="dt-ref-k">'+esc(rm.label)+'</div><div class="dt-ref-v">'+esc(s.reference)+'</div></div><button class="dt-ref-copy" id="dtRefCopy">Copy</button></div>';
+      document.getElementById("dtRefCopy").addEventListener("click",function(){
+        var b=this;
+        if(navigator.clipboard&&navigator.clipboard.writeText){
+          navigator.clipboard.writeText(s.reference).then(function(){b.textContent="Copied!";setTimeout(function(){b.textContent="Copy";},1200);},function(){prompt("Copy your reference:",s.reference);});
+        } else { prompt("Copy your reference:",s.reference); }
+      });
+    } else { refEl.innerHTML=""; }
+
     // comparison (bills only, information only)
     var cmp = document.getElementById("dtCompare");
     var b = BENCHMARKS[s.cat];
@@ -2078,10 +2101,12 @@
     // reset
     document.getElementById("fName").value="";
     document.getElementById("fCost").value="";
+    document.getElementById("fRef").value="";
     document.getElementById("fCycle").value="monthly";
     document.getElementById("fDate").value=daysFromNow(30);
     document.getElementById("fCat").value="streaming";
     document.getElementById("fTrialEnd").value=daysFromNow(7);
+    updateRefLabel("streaming");
     renderPresets("streaming");
     trialOn=false;
     document.getElementById("trialSw").classList.remove("on");
@@ -2094,9 +2119,11 @@
         del.style.display="block";
         document.getElementById("fName").value=s.name;
         document.getElementById("fCost").value=s.cost;
+        document.getElementById("fRef").value=s.reference||"";
         document.getElementById("fCycle").value=s.cycle;
         document.getElementById("fDate").value=s.date;
         document.getElementById("fCat").value=s.cat;
+        updateRefLabel(s.cat);
         renderPresets(s.cat);
         if(s.trial){
           trialOn=true;
@@ -2246,6 +2273,22 @@
   document.getElementById("shareCloseBtn").addEventListener("click", closeShareSheet);
 
   // ---- Save ----
+  // ---- Smart reference label (MPRN for electricity, GPRN for gas, etc.) ----
+  function refMeta(cat){
+    if(cat==="electricity") return {label:"MPRN (electricity)", ph:"11-digit MPRN"};
+    if(cat==="gas") return {label:"GPRN (gas)", ph:"7-digit GPRN"};
+    if(cat==="energy") return {label:"MPRN / GPRN", ph:"MPRN and/or GPRN"};
+    if(cat==="insurance_car"||cat==="insurance_home"||cat==="insurance_health") return {label:"Policy number", ph:"policy number"};
+    if(cat==="mortgage"||cat==="loan"||cat==="water"||cat==="waste") return {label:"Account number", ph:"account number"};
+    return {label:"Reference / account no.", ph:"account number or reference"};
+  }
+  function updateRefLabel(cat){
+    var m=refMeta(cat);
+    document.getElementById("fRefLabel").innerHTML = esc(m.label)+' <span style="opacity:.55;font-weight:500">(optional)</span>';
+    document.getElementById("fRef").placeholder = "e.g. "+m.ph;
+  }
+  document.getElementById("fCat").addEventListener("change",function(){ updateRefLabel(this.value); });
+
   document.getElementById("saveBtn").addEventListener("click",function(){
     var name=document.getElementById("fName").value.trim();
     var cost=parseFloat(document.getElementById("fCost").value);
@@ -2255,9 +2298,10 @@
     var date=document.getElementById("fDate").value||daysFromNow(30);
     var cat=document.getElementById("fCat").value;
     var trialEnd=document.getElementById("fTrialEnd").value;
+    var ref=(document.getElementById("fRef").value||"").trim();
 
     var row={name:name,cost:cost,cycle:cycle,renewal_date:date,category:cat,
-      is_trial:trialOn,trial_end_date:trialOn?trialEnd:null};
+      is_trial:trialOn,trial_end_date:trialOn?trialEnd:null,reference:ref||null};
 
     var btn=this; btn.disabled=true;
 
