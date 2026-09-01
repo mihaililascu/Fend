@@ -603,7 +603,7 @@
     </div>
     <div class="cal-grid" id="calGrid"></div>
     <div class="cal-legend" id="calLegend"></div>
-    <div class="section-label" id="calListLabel">Renewals this month</div>
+    <div class="section-label" id="calListLabel">Payments this month</div>
     <div id="calList"></div>
   </div>
 
@@ -842,7 +842,7 @@
     </div>
 
     <div class="field">
-      <label>Next renewal date</label>
+      <label>Next payment date</label>
       <input id="fDate" type="date" />
     </div>
 
@@ -1158,10 +1158,10 @@
   function curSym(){ return REGION==="uk" ? "£" : "€"; }
   function money(n){ return curSym()+n.toLocaleString(REGION==="uk"?"en-GB":"en-IE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function whenText(n){
-    if(n<0) return "renewed "+(-n)+"d ago";
-    if(n===0) return "renews today";
-    if(n===1) return "renews tomorrow";
-    return "renews in "+n+" days";
+    if(n<0) return "Bill due "+(-n)+"d ago";
+    if(n===0) return "Bill due today";
+    if(n===1) return "Bill due tomorrow";
+    return "Bill due in "+n+" days";
   }
 
   // ---- Render ----
@@ -1653,7 +1653,7 @@
       card.className = "due-soon";
       card.innerHTML = stampSVG("ALL CLEAR","#10b981")+
         '<div><div class="ds-title">Nothing due soon</div>'+
-        '<div class="ds-sub">No renewals or trial deadlines in the next 3 days.</div></div>';
+        '<div class="ds-sub">No payments or trial deadlines in the next 3 days.</div></div>';
     }
   }
 
@@ -1792,8 +1792,8 @@
 
     var listEl = document.getElementById("calList");
     if(renewals.length===0){
-      listEl.innerHTML = '<div class="empty"><div class="e-title">Nothing renewing</div>'+
-        '<div class="e-sub">No renewals or trial deadlines this month.</div></div>';
+      listEl.innerHTML = '<div class="empty"><div class="e-title">Nothing due</div>'+
+        '<div class="e-sub">No payments or trial deadlines this month.</div></div>';
       return;
     }
     renewals.sort(function(a,b){return a.day-b.day;});
@@ -1803,7 +1803,7 @@
       lhtml += '<div class="card'+(r.isTrial?' trial':'')+'" data-id="'+s.id+'">';
       lhtml += iconHTML(s);
       lhtml += '<div class="mid"><div class="name">'+esc(s.name)+'</div>';
-      lhtml += '<div class="meta">'+(r.isTrial?'Trial ends':'Renews')+' on the '+r.day+(r.isTrial?'':'')+'</div></div>';
+      lhtml += '<div class="meta">'+(r.isTrial?'Trial ends':'Due')+' on the '+r.day+(r.isTrial?'':'')+'</div></div>';
       lhtml += '<div class="right"><div class="price">'+money(s.cost)+'</div><div class="cyc">'+(s.cycle==="yearly"?"/yr":"/mo")+'</div></div>';
       lhtml += '</div>';
     });
@@ -2077,7 +2077,7 @@
     document.getElementById("dtStats").innerHTML =
       '<div class="dt-stat"><span class="k">Cost per year</span><span class="v">'+money(yearly)+'</span></div>'+
       '<div class="dt-stat"><span class="k">Per month</span><span class="v">'+money(m)+'</span></div>'+
-      '<div class="dt-stat"><span class="k">'+(s.trial?"Trial ends in":"Renews in")+'</span>'+
+      '<div class="dt-stat"><span class="k">'+(s.trial?"Trial ends in":"Due in")+'</span>'+
         '<span class="v">'+esc(daysTxt)+'</span></div>'+
       '<div class="dt-stat"><span class="k">Paid so far</span><span class="v">'+paidTxt+'</span>'+
         '<span class="k" style="margin:4px 0 0">'+esc(paidNote)+'</span></div>';
