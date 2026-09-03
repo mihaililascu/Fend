@@ -4,7 +4,19 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#000000" />
-<title>Fend</title>
+<title>Fend — Private bills and subscription tracker (Ireland &amp; UK)</title>
+<meta name="description" content="Fend is the private, Ireland- and UK-first bills and subscription tracker. See what you pay, get payment reminders, and spot overpriced bills — with no bank linking, ever." />
+<link rel="canonical" href="https://getfendapp.com/" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2310b981'/%3E%3Ctext x='50' y='73' font-family='Arial,Helvetica,sans-serif' font-size='62' font-weight='bold' text-anchor='middle' fill='white'%3EF%3C/text%3E%3C/svg%3E" />
+<meta name="apple-mobile-web-app-title" content="Fend" />
+<meta property="og:title" content="Fend — Private bills and subscription tracker" />
+<meta property="og:description" content="Track what you pay, get payment reminders, and spot overpriced bills. Ireland- and UK-first, private, no bank linking." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://getfendapp.com/" />
+<meta property="og:site_name" content="Fend" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Fend — Private bills and subscription tracker" />
+<meta name="twitter:description" content="Track what you pay, get payment reminders, and spot overpriced bills. Ireland- and UK-first, private, no bank linking." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -198,6 +210,8 @@
     display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
   .sr-label{flex:1;font-size:16px;font-weight:600}
   .sr-value{color:var(--muted);font-size:14px;font-weight:600}
+  #currencyRow{position:relative}
+  .sr-country-select{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;border:0;margin:0;padding:0;font-size:16px;font-family:inherit;background:none;appearance:none;-webkit-appearance:none}
 
   /* Due soon reassurance card */
   .due-soon{background:linear-gradient(180deg,rgba(16,185,129,.10),transparent),var(--surface);
@@ -658,14 +672,13 @@
       <div class="settings-row" id="currencyRow">
         <div class="sr-icon">🌍</div>
         <div class="sr-label">Country</div>
-        <div class="sr-value">
-          <select id="setCountry" class="sr-select">
-            <option value="ie">Ireland (€)</option>
-            <option value="uk">United Kingdom (£)</option>
-          </select>
-        </div>
+        <div class="sr-value"><span id="countryValue">Ireland (€)</span> ›</div>
+        <select id="setCountry" class="sr-country-select" aria-label="Country">
+          <option value="ie">Ireland (€)</option>
+          <option value="uk">United Kingdom (£)</option>
+        </select>
       </div>
-      <div class="settings-row">
+      <div class="settings-row" id="rateRow">
         <div class="sr-icon">⭐</div>
         <div class="sr-label">Rate Us</div>
         <div class="sr-value">›</div>
@@ -1155,6 +1168,20 @@
     var d=new Date(dateStr+"T00:00:00");
     return Math.round((d - today)/86400000);
   }
+  function dueDays(s){
+    // Cycle-aware days until the NEXT payment: monthly rolls to the next month, yearly to the next year.
+    if(!s || !s.date) return 0;
+    var base = new Date(s.date+"T00:00:00");
+    if(isNaN(base.getTime())) return 0;
+    if(s.cycle==="yearly"){
+      var cy = new Date(today.getFullYear(), base.getMonth(), base.getDate()); cy.setHours(0,0,0,0);
+      if(cy < today){ cy = new Date(today.getFullYear()+1, base.getMonth(), base.getDate()); cy.setHours(0,0,0,0); }
+      return Math.round((cy - today)/86400000);
+    }
+    var cm = new Date(today.getFullYear(), today.getMonth(), base.getDate()); cm.setHours(0,0,0,0);
+    if(cm < today){ cm = new Date(today.getFullYear(), today.getMonth()+1, base.getDate()); cm.setHours(0,0,0,0); }
+    return Math.round((cm - today)/86400000);
+  }
   function curSym(){ return REGION==="uk" ? "£" : "€"; }
   function money(n){ return curSym()+n.toLocaleString(REGION==="uk"?"en-GB":"en-IE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function whenText(n){
@@ -1279,8 +1306,8 @@
       if(filter==="bill") items = items.filter(function(s){return ["bill","electricity","gas","energy","broadband","mobile","insurance_car","insurance_home","insurance_health","mortgage","waste","water"].indexOf(s.cat)>=0;});
     }
     items.sort(function(a,b){
-      var da = a.trial ? daysUntil(a.trialEnd) : daysUntil(a.date);
-      var db = b.trial ? daysUntil(b.trialEnd) : daysUntil(b.date);
+      var da = a.trial ? daysUntil(a.trialEnd) : dueDays(a);
+      var db = b.trial ? daysUntil(b.trialEnd) : dueDays(b);
       return da - db;
     });
 
@@ -1308,7 +1335,7 @@
         html += '<div class="meta"><span class="warn">Cancel before you\'re charged</span> · then '+money(s.cost)+'/mo</div>';
       } else {
         html += '<div class="name">'+esc(s.name)+'</div>';
-        html += '<div class="meta">'+whenText(daysUntil(s.date))+'</div>';
+        html += '<div class="meta">'+whenText(dueDays(s))+'</div>';
       }
       html += '</div>';
       html += '<div class="right"><div class="price">'+money(s.cost)+'</div>'+
@@ -1631,18 +1658,18 @@
     if(filter!=="all"){ card.style.display="none"; return; }
     var soon = subs.filter(function(s){
       if(s.status==="cancelled") return false;
-      var d = s.trial ? daysUntil(s.trialEnd) : daysUntil(s.date);
+      var d = s.trial ? daysUntil(s.trialEnd) : dueDays(s);
       return d>=0 && d<=3;
     });
     card.style.display="flex";
     if(soon.length>0){
       var total = soon.reduce(function(a,s){return a+s.cost;},0);
       var next = soon.slice().sort(function(a,b){
-        var da = a.trial ? daysUntil(a.trialEnd) : daysUntil(a.date);
-        var db = b.trial ? daysUntil(b.trialEnd) : daysUntil(b.date);
+        var da = a.trial ? daysUntil(a.trialEnd) : dueDays(a);
+        var db = b.trial ? daysUntil(b.trialEnd) : dueDays(b);
         return da-db;
       })[0];
-      var nd = next.trial ? daysUntil(next.trialEnd) : daysUntil(next.date);
+      var nd = next.trial ? daysUntil(next.trialEnd) : dueDays(next);
       var when = nd===0 ? "today" : (nd===1 ? "tomorrow" : "in "+nd+" days");
       card.className = "due-soon due-alert";
       card.innerHTML = stampSVG("PAYMENT DUE","#C7477F")+
@@ -1712,14 +1739,22 @@
   function activeRenewalsInMonth(year, month){
     // returns array of {day, sub, isTrial} for non-cancelled subs whose date/trialEnd falls in this year+month
     var out = [];
+    var dim = new Date(year, month+1, 0).getDate();
     subs.forEach(function(s){
       if(s.status==="cancelled") return;
       if(s.trial && s.trialEnd){
         var td = new Date(s.trialEnd+"T00:00:00");
         if(td.getFullYear()===year && td.getMonth()===month) out.push({day:td.getDate(),sub:s,isTrial:true});
+        return; // during a trial there's no recurring payment yet
       }
+      if(!s.date) return;
       var rd = new Date(s.date+"T00:00:00");
-      if(rd.getFullYear()===year && rd.getMonth()===month) out.push({day:rd.getDate(),sub:s,isTrial:false});
+      if(isNaN(rd.getTime())) return;
+      if(s.cycle==="yearly"){
+        if(rd.getMonth()===month) out.push({day:Math.min(rd.getDate(),dim),sub:s,isTrial:false});
+      } else {
+        out.push({day:Math.min(rd.getDate(),dim),sub:s,isTrial:false});
+      }
     });
     return out;
   }
@@ -1891,10 +1926,16 @@
   document.getElementById("wlBack").addEventListener("click",function(){ switchView("home"); });
 
   // ---- Country / region ----
+  function updateCountryValue(){
+    var cv = document.getElementById("countryValue");
+    var s = document.getElementById("setCountry");
+    if(cv && s && s.selectedIndex>=0) cv.textContent = s.options[s.selectedIndex].text;
+  }
   (function(){
     var sel = document.getElementById("setCountry");
     if(sel){
       sel.value = REGION;
+      updateCountryValue();
       sel.addEventListener("change",function(){ setRegion(this.value); });
     }
     var syms = document.querySelectorAll(".curSym");
@@ -1934,6 +1975,13 @@
   document.getElementById("privacyRow").addEventListener("click",function(){
     window.location.href = "/privacy.html";
   });
+  var _rateRow = document.getElementById("rateRow");
+  if(_rateRow){ _rateRow.addEventListener("click",function(){
+    // Fend isn't on the Play Store yet, so gather feedback for now.
+    // AT LAUNCH: replace the line below with the Play listing, e.g.
+    // window.location.href = "https://play.google.com/store/apps/details?id=YOUR_PACKAGE_ID";
+    window.location.href = "mailto:hello@getfendapp.com?subject=Fend%20feedback%20%E2%AD%90&body=What%20do%20you%20think%20of%20Fend%3F";
+  }); }
 
   // ---- Pro (billing not built yet — honest coming-soon, no dead-ends) ----
   function proComingSoon(){
@@ -1991,6 +2039,7 @@
     for(var i=0;i<syms.length;i++) syms[i].textContent = curSym();
     var sel = document.getElementById("setCountry");
     if(sel) sel.value = REGION;
+    updateCountryValue();
     var catSel = document.getElementById("fCat");
     if(catSel && typeof renderPresets==="function") renderPresets(catSel.value);
     if(typeof renderAll==="function") renderAll();
@@ -2070,8 +2119,7 @@
         cycles+(s.cycle==="yearly" ? " year" : " month")+(cycles===1?"":"s")+" tracked";
     }
 
-    var target = s.trial && s.trialEnd ? s.trialEnd : s.date;
-    var d = daysUntil(target);
+    var d = (s.trial && s.trialEnd) ? daysUntil(s.trialEnd) : dueDays(s);
     var daysTxt = (d===null||isNaN(d)) ? "—" : (d<0 ? Math.abs(d)+" days ago" : d+" days");
 
     document.getElementById("dtStats").innerHTML =
