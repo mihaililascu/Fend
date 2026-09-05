@@ -442,6 +442,14 @@
   .dt-contract{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 14px}
   .dt-contract.warn{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.08)}
   .dt-contract .dt-ref-k{margin-bottom:2px}
+  .home-col{display:contents}
+  @media (min-width:900px){
+    body{max-width:1080px}
+    #homeView{display:flex;align-items:flex-start;gap:18px}
+    .home-col{display:flex;flex-direction:column}
+    .home-col-a{flex:0 0 340px}
+    .home-col-b{flex:1 1 auto;min-width:0}
+  }
 </style>
 </head>
 <body>
@@ -569,6 +577,7 @@
   </div>
 
   <div id="homeView">
+    <div class="home-col home-col-a">
     <div class="hero">
       <div class="label">You're spending</div>
       <div class="big" id="heroMonthly">€0<small>/mo</small></div>
@@ -576,6 +585,8 @@
     </div>
 
     <div id="spendCard" style="display:none"></div>
+    </div>
+    <div class="home-col home-col-b">
 
     <div id="checklistCard" style="display:none"></div>
 
@@ -608,6 +619,7 @@
       <span class="friend-arrow">→</span>
     </button>
     <button class="wl-link" id="wlOpen">What's left after your bills? →</button>
+    </div>
   </div>
 
   <div id="calendarView" style="display:none">
