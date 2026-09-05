@@ -443,12 +443,21 @@
   .dt-contract.warn{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.08)}
   .dt-contract .dt-ref-k{margin-bottom:2px}
   .home-col{display:contents}
+  .kpi-row{display:none}
+  .top-nav{display:none}
   @media (min-width:900px){
     body{max-width:1080px}
-    #homeView{display:flex;align-items:flex-start;gap:18px}
+    .top-nav{display:flex;align-items:center;gap:22px;margin-left:auto;margin-right:22px}
+    .top-nav a{color:var(--muted);font-size:15px;font-weight:600;cursor:pointer}
+    .top-nav a.on{color:var(--text)}
+    #homeView{display:grid;grid-template-columns:340px 1fr;grid-template-areas:"kpi kpi" "cola colb";gap:16px 18px;align-items:start}
+    .kpi-row{display:grid;grid-area:kpi;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:2px}
     .home-col{display:flex;flex-direction:column}
-    .home-col-a{flex:0 0 340px}
-    .home-col-b{flex:1 1 auto;min-width:0}
+    .home-col-a{grid-area:cola}
+    .home-col-b{grid-area:colb;min-width:0}
+    .kpi-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+    .kpi-card .k{font-size:12px;color:var(--muted);margin-bottom:5px}
+    .kpi-card .v{font-size:21px;font-weight:800}
   }
 </style>
 </head>
@@ -573,10 +582,17 @@
         </g>
       </svg>
     </div>
+    <div class="top-nav"><a id="tnHome" class="on">Home</a><a id="tnCal">Calendar</a><a id="tnStats">Stats</a></div>
     <button class="gopro">Pro · Soon ✦</button>
   </div>
 
   <div id="homeView">
+    <div class="kpi-row" id="kpiRow">
+      <div class="kpi-card"><div class="k">Monthly spend</div><div class="v" id="kpiMonthly">€0</div></div>
+      <div class="kpi-card"><div class="k">Per year</div><div class="v" id="kpiYearly">€0</div></div>
+      <div class="kpi-card"><div class="k">Active bills</div><div class="v" id="kpiCount">0</div></div>
+      <div class="kpi-card"><div class="k">Next due</div><div class="v" id="kpiNext" style="font-size:15px">—</div></div>
+    </div>
     <div class="home-col home-col-a">
     <div class="hero">
       <div class="label">You're spending</div>
@@ -1234,6 +1250,23 @@
     document.getElementById("heroMonthly").innerHTML = money(m).replace(/€/,"€")+"<small>/mo</small>";
     document.getElementById("heroYearly").textContent = money(m*12);
     document.getElementById("heroCount").textContent = activeSubs.length;
+    renderKPIs(activeSubs, m);
+  }
+  function renderKPIs(activeSubs, m){
+    var km=document.getElementById("kpiMonthly");
+    if(!km) return;
+    km.textContent = money(m).replace(/\.\d{2}$/,"");
+    document.getElementById("kpiYearly").textContent = money(m*12).replace(/\.\d{2}$/,"");
+    document.getElementById("kpiCount").textContent = activeSubs.length;
+    var bills = activeSubs.filter(function(s){return !s.trial;});
+    var txt="\u2014";
+    if(bills.length){
+      bills.sort(function(a,b){return dueDays(a)-dueDays(b);});
+      var nx=bills[0], d=dueDays(nx);
+      var w = d<=0?"today":(d===1?"tomorrow":d+"d");
+      txt = nx.name+" \u00b7 "+w;
+    }
+    document.getElementById("kpiNext").textContent = txt;
   }
 
   // ---- Spend breakdown (donut, built from the user's real categories) ----
@@ -1991,6 +2024,7 @@
     document.getElementById("navCalendar").classList.toggle("on", view==="calendar");
     document.getElementById("navSettings").classList.toggle("on", view==="settings");
     var _na=document.getElementById("navAdmin"); if(_na) _na.classList.toggle("on", view==="admin");
+    var _tnh=document.getElementById("tnHome"); if(_tnh){ _tnh.classList.toggle("on", view==="home"); document.getElementById("tnCal").classList.toggle("on", view==="calendar"); }
     if(view==="calendar"){
       renderCalendar();
       if(!calendarVisited){ calendarVisited = true; renderChecklist(); }
@@ -2001,6 +2035,9 @@
   document.getElementById("navSettings").addEventListener("click",function(){ switchView("settings"); });
   var _navAdmin=document.getElementById("navAdmin");
   if(_navAdmin){ _navAdmin.addEventListener("click",function(){ switchView("admin"); }); }
+  var _tnHome=document.getElementById("tnHome"); if(_tnHome) _tnHome.addEventListener("click",function(){ switchView("home"); });
+  var _tnCal=document.getElementById("tnCal"); if(_tnCal) _tnCal.addEventListener("click",function(){ switchView("calendar"); });
+  var _tnStats=document.getElementById("tnStats"); if(_tnStats) _tnStats.addEventListener("click",function(){ switchView("home"); });
   var _adminRefresh=document.getElementById("adminRefresh");
   if(_adminRefresh){ _adminRefresh.addEventListener("click", loadAdmin); }
   function adminCard(label,val){
