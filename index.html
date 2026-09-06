@@ -2024,7 +2024,7 @@
     document.getElementById("navCalendar").classList.toggle("on", view==="calendar");
     document.getElementById("navSettings").classList.toggle("on", view==="settings");
     var _na=document.getElementById("navAdmin"); if(_na) _na.classList.toggle("on", view==="admin");
-    var _tnh=document.getElementById("tnHome"); if(_tnh){ _tnh.classList.toggle("on", view==="home"); document.getElementById("tnCal").classList.toggle("on", view==="calendar"); }
+    var _tnh=document.getElementById("tnHome"); if(_tnh){ _tnh.classList.toggle("on", view==="home"); document.getElementById("tnCal").classList.toggle("on", view==="calendar"); document.getElementById("tnStats").classList.toggle("on", view==="admin"); }
     if(view==="calendar"){
       renderCalendar();
       if(!calendarVisited){ calendarVisited = true; renderChecklist(); }
@@ -2037,7 +2037,7 @@
   if(_navAdmin){ _navAdmin.addEventListener("click",function(){ switchView("admin"); }); }
   var _tnHome=document.getElementById("tnHome"); if(_tnHome) _tnHome.addEventListener("click",function(){ switchView("home"); });
   var _tnCal=document.getElementById("tnCal"); if(_tnCal) _tnCal.addEventListener("click",function(){ switchView("calendar"); });
-  var _tnStats=document.getElementById("tnStats"); if(_tnStats) _tnStats.addEventListener("click",function(){ switchView("home"); });
+  var _tnStats=document.getElementById("tnStats"); if(_tnStats) _tnStats.addEventListener("click",function(){ switchView("admin"); });
   var _adminRefresh=document.getElementById("adminRefresh");
   if(_adminRefresh){ _adminRefresh.addEventListener("click", loadAdmin); }
   function adminCard(label,val){
