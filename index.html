@@ -463,6 +463,13 @@
   .kpi-card .k{font-size:12px;color:var(--muted);margin-bottom:5px}
   .kpi-card .v{font-size:21px;font-weight:800}
   #statsView{padding-bottom:40px}
+  .stats-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:0}
+  .stats-donut-card{display:flex;flex-direction:column;align-items:center}
+  .stats-donut-card .sb-head,.stats-donut-card .sb-legend{width:100%}
+  .stats-detail-card .sb-title{font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .kpi-card{cursor:pointer;transition:border-color .15s ease, background .15s ease}
+  .kpi-card:hover{border-color:var(--accent);background:var(--surface-2)}
+  .sb-row{cursor:default}
   .stats-title{font-size:24px;font-weight:800;margin:4px 0 16px}
   .stats-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
   .stats-main{display:flex;flex-direction:column;gap:14px}
@@ -2070,13 +2077,13 @@
         statCard("Average bill", money(avg))+
       '</div>'+
       '<div class="stats-main">'+
-        '<div class="card stats-donut-card">'+
+        '<div class="stats-card stats-donut-card">'+
           '<div class="sb-head"><div class="sb-title">Where your money goes</div><div class="sb-pill">'+active.length+' active</div></div>'+
-          '<div class="sb-chart"><svg class="sb-donut" width="200" height="200" viewBox="0 0 210 210"><circle cx="105" cy="105" r="'+r+'" fill="none" stroke="#232327" stroke-width="26"></circle>'+segs+'</svg>'+
+          '<div class="sb-chart"><svg class="sb-donut" width="250" height="250" viewBox="0 0 210 210"><circle cx="105" cy="105" r="'+r+'" fill="none" stroke="#232327" stroke-width="26"></circle>'+segs+'</svg>'+
           '<div class="sb-center"><div class="sb-amt">'+money(total)+'</div><div class="sb-yr">'+money(total*12)+' / year</div></div></div>'+
           '<div class="sb-legend">'+legend+'</div>'+
         '</div>'+
-        '<div class="card stats-detail-card">'+
+        '<div class="stats-card stats-detail-card">'+
           '<div class="sb-title" style="margin-bottom:12px">The detail</div>'+
           detailRow("Biggest bill", biggest? esc(biggest.name)+" \u00b7 "+money(monthlyCost(biggest))+"/mo" : "\u2014")+
           detailRow("Top category", rows.length? (topMeta.label||"\u2014")+" \u00b7 "+money(rows[0].val)+"/mo" : "\u2014")+
