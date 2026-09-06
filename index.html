@@ -160,6 +160,8 @@
   .cal-day .dot{width:6px;height:6px;border-radius:999px;background:var(--accent)}
   .cal-day.has-bills{cursor:pointer}
   .cal-day.has-bills:active{border-color:var(--accent);background:var(--surface-2)}
+  button.cal-day{appearance:none;-webkit-appearance:none;margin:0;font:inherit;color:inherit;
+    text-align:center;touch-action:manipulation}
   .day-sheet-sub{color:var(--muted);font-size:13px;font-weight:600;margin:2px 0 12px}
   #daySheetList .card{margin-bottom:10px}
   #daySheetList .card:last-of-type{margin-bottom:2px}
@@ -474,7 +476,20 @@
   .stats-detail-card .sb-title{font-size:15px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
   .kpi-card{cursor:pointer;transition:border-color .15s ease, background .15s ease}
   .kpi-card:hover{border-color:var(--accent);background:var(--surface-2)}
+  #statsView .kpi-card[data-kpi]:active{border-color:var(--accent);background:var(--surface-2)}
   .sb-row{cursor:default}
+  #statsView .sb-legend .sb-row{cursor:pointer;border-radius:10px;padding-left:6px;padding-right:6px;
+    transition:background .12s ease}
+  #statsView .sb-legend .sb-row:active{background:var(--surface-2)}
+  #statsView .sb-legend .sb-row .sb-go{color:var(--muted);font-size:13px;margin-left:8px;flex:0 0 auto}
+  .stats-hint{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
+  .stats-avg-note{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+    padding:11px 13px;font-size:13px;color:#cfcfd4;line-height:1.55;margin-bottom:14px}
+  .stats-avg-note b{color:var(--text)}
+  .cat-chip{display:inline-flex;align-items:center;gap:8px;background:var(--surface-2);
+    border:1px solid var(--line);color:var(--text);font-family:inherit;font-weight:700;
+    font-size:13px;padding:8px 14px;border-radius:999px;margin:0 0 12px;cursor:pointer}
+  .cat-chip .x{color:var(--muted);font-weight:800}
   .stats-title{font-size:24px;font-weight:800;margin:4px 0 16px}
   .stats-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
   .stats-main{display:flex;flex-direction:column;gap:14px}
@@ -1060,6 +1075,9 @@
   var currentUserEmail = null;
   var ADMIN_EMAIL = "mihailascu05@gmail.com";
   var filter = "all";
+  var catFilter = null;         // category key to narrow the home list to, or null
+  var statsLegendYearly = false; // Stats: show category amounts as yearly totals
+  var statsAvgOpen = false;      // Stats: "Average bill" breakdown note expanded
   var editingId = null;
 
   var presets = [
@@ -1414,21 +1432,32 @@
       if(filter==="trial") items = items.filter(function(s){return s.trial;});
       if(filter==="bill") items = items.filter(function(s){return ["bill","electricity","gas","energy","broadband","mobile","insurance_car","insurance_home","insurance_health","mortgage","waste","water"].indexOf(s.cat)>=0;});
     }
+    if(catFilter){
+      items = items.filter(function(s){return s.status!=="cancelled" && (s.cat||"other")===catFilter;});
+    }
     items.sort(function(a,b){
       var da = a.trial ? daysUntil(a.trialEnd) : dueDays(a);
       var db = b.trial ? daysUntil(b.trialEnd) : dueDays(b);
       return da - db;
     });
 
+    var catLabel = catFilter ? ((CAT_META[catFilter] && CAT_META[catFilter].label) || catFilter.replace(/_/g," ")) : "";
+    var chipHtml = catFilter
+      ? '<button class="cat-chip" id="catChipClear">'+esc(catLabel)+' <span class="x">✕</span></button>'
+      : "";
+
     if(items.length===0){
-      var msg = filter==="cancelled"
-        ? '<div class="e-title">No cancelled subscriptions</div><div class="e-sub">Anything you cancel stays here for your records.</div>'
-        : '<div class="e-title">Nothing here yet</div><div class="e-sub">Tap the + button to add your first subscription.</div>';
-      el.innerHTML = '<div class="empty">'+msg+'</div>';
+      var msg = catFilter
+        ? '<div class="e-title">No bills in '+esc(catLabel)+'</div><div class="e-sub">Nothing active in this category right now.</div>'
+        : (filter==="cancelled"
+          ? '<div class="e-title">No cancelled subscriptions</div><div class="e-sub">Anything you cancel stays here for your records.</div>'
+          : '<div class="e-title">Nothing here yet</div><div class="e-sub">Tap the + button to add your first subscription.</div>');
+      el.innerHTML = chipHtml + '<div class="empty">'+msg+'</div>';
+      wireCatChip(el);
       return;
     }
 
-    var html = '<div class="section-label">'+(filter==="cancelled"?"Cancelled":"Upcoming")+'</div>';
+    var html = chipHtml + '<div class="section-label">'+(catFilter?esc(catLabel):(filter==="cancelled"?"Cancelled":"Upcoming"))+'</div>';
     items.forEach(function(s){
       var trialDays = s.trial ? daysUntil(s.trialEnd) : null;
       var isCancelled = s.status==="cancelled";
@@ -1452,6 +1481,7 @@
       html += '</div>';
     });
     el.innerHTML = html;
+    wireCatChip(el);
 
     var cards = el.querySelectorAll(".card");
     for(var i=0;i<cards.length;i++){
@@ -1459,6 +1489,10 @@
         openDetail(this.getAttribute("data-id"));
       });
     }
+  }
+  function wireCatChip(el){
+    var cc = el.querySelector("#catChipClear");
+    if(cc) cc.addEventListener("click",function(){ catFilter=null; renderList(); renderDueSoon(); });
   }
   function renderBillCheck(){
     var card = document.getElementById("billCheckCard");
@@ -1900,8 +1934,9 @@
     for(var d=1; d<=daysInMonth; d++){
       var isToday = isCurrentMonth && d===today.getDate();
       var hasBills = !!byDay[d];
-      html += '<div class="cal-day'+(isToday?' today':'')+(hasBills?' has-bills':'')+'"'+
-        (hasBills?' data-day="'+d+'"':'')+'><div class="dnum">'+d+'</div>';
+      var tag = hasBills ? 'button' : 'div';
+      html += '<'+tag+' class="cal-day'+(isToday?' today':'')+(hasBills?' has-bills':'')+'"'+
+        (hasBills?' type="button" data-day="'+d+'"':'')+'><div class="dnum">'+d+'</div>';
       if(byDay[d]){
         html += '<div class="dots">';
         byDay[d].slice(0,4).forEach(function(r){
@@ -1911,16 +1946,9 @@
         });
         html += '</div>';
       }
-      html += '</div>';
+      html += '</'+tag+'>';
     }
     grid.innerHTML = html;
-
-    var dayCells = grid.querySelectorAll('.cal-day[data-day]');
-    for(var dc=0; dc<dayCells.length; dc++){
-      dayCells[dc].addEventListener("click", function(){
-        openDaySheet(year, month, parseInt(this.getAttribute("data-day"),10));
-      });
-    }
 
     // legend — only categories actually shown this month
     var legend = document.getElementById("calLegend");
@@ -2019,6 +2047,14 @@
     document.getElementById("daySheet").classList.remove("show");
   }
   document.getElementById("daySheetCloseBtn").addEventListener("click", closeDaySheet);
+
+  // Tap a calendar day (delegated so it works after every re-render, on touch and desktop alike)
+  document.getElementById("calGrid").addEventListener("click", function(e){
+    var cell = e.target.closest ? e.target.closest(".cal-day[data-day]") : null;
+    if(!cell) return;
+    var base = new Date(today.getFullYear(), today.getMonth()+calOffset, 1);
+    openDaySheet(base.getFullYear(), base.getMonth(), parseInt(cell.getAttribute("data-day"),10));
+  });
 
   document.getElementById("calPrev").addEventListener("click",function(){ calOffset--; renderCalendar(); });
   document.getElementById("calNext").addEventListener("click",function(){ calOffset++; renderCalendar(); });
@@ -2131,10 +2167,13 @@
     rows.forEach(function(row){
       var meta=CAT_META[row.cat]||{label:row.cat,color:"#6b7280"};
       var pct= total>0?Math.round((row.val/total)*100):0;
-      legend+='<div class="sb-row"><span class="sb-dot" style="background:'+meta.color+'"></span><span class="sb-name">'+(meta.label||row.cat)+'</span><span class="sb-val">'+money(row.val)+'</span><span class="sb-pct">'+pct+'%</span></div>';
+      var showVal = statsLegendYearly ? row.val*12 : row.val;
+      var valTxt = money(showVal) + (statsLegendYearly ? "/yr" : "");
+      legend+='<div class="sb-row" data-cat="'+esc(row.cat)+'"><span class="sb-dot" style="background:'+meta.color+'"></span><span class="sb-name">'+(meta.label||row.cat)+'</span><span class="sb-val">'+valTxt+'</span><span class="sb-pct">'+pct+'%</span><span class="sb-go">›</span></div>';
     });
     var bills = active.filter(function(s){return !s.trial;});
     var biggest = active.slice().sort(function(a,b){return monthlyCost(b)-monthlyCost(a);})[0];
+    var smallest = active.slice().sort(function(a,b){return monthlyCost(a)-monthlyCost(b);})[0];
     var avg = active.length? m/active.length : 0;
     var monthlyCount = active.filter(function(s){return s.cycle!=="yearly";}).length;
     var yearlyCount = active.filter(function(s){return s.cycle==="yearly";}).length;
@@ -2144,17 +2183,23 @@
     el.innerHTML =
       '<div class="stats-title">Your spending</div>'+
       '<div class="stats-kpis">'+
-        statCard("Per month", money(m))+
-        statCard("Per year", money(m*12))+
-        statCard("Active bills", ""+active.length)+
-        statCard("Average bill", money(avg))+
+        statCard("Per month", money(m), "permonth")+
+        statCard("Per year", money(m*12), "peryear")+
+        statCard("Active bills", ""+active.length, "count")+
+        statCard("Average bill", money(avg), "avg")+
       '</div>'+
+      (statsAvgOpen ? '<div class="stats-avg-note">'+
+        'Your '+money(m)+'/mo total, split across '+active.length+' '+(active.length===1?'bill':'bills')+'.'+
+        (biggest ? ' Biggest: <b>'+esc(biggest.name)+'</b> at '+money(monthlyCost(biggest))+'/mo.' : '')+
+        (smallest && smallest!==biggest ? ' Smallest: <b>'+esc(smallest.name)+'</b> at '+money(monthlyCost(smallest))+'/mo.' : '')+
+        '</div>' : '')+
       '<div class="stats-main">'+
         '<div class="stats-card stats-donut-card">'+
           '<div class="sb-head"><div class="sb-title">Where your money goes</div><div class="sb-pill">'+active.length+' active</div></div>'+
           '<div class="sb-chart"><svg class="sb-donut" width="250" height="250" viewBox="0 0 210 210"><circle cx="105" cy="105" r="'+r+'" fill="none" stroke="#232327" stroke-width="26"></circle>'+segs+'</svg>'+
           '<div class="sb-center"><div class="sb-amt">'+money(total)+'</div><div class="sb-yr">'+money(total*12)+' / year</div></div></div>'+
           '<div class="sb-legend">'+legend+'</div>'+
+          '<div class="stats-hint">Tap a category to see those bills'+(statsLegendYearly?' · showing yearly totals':'')+'</div>'+
         '</div>'+
         '<div class="stats-card stats-detail-card">'+
           '<div class="sb-title" style="margin-bottom:12px">The detail</div>'+
@@ -2166,7 +2211,47 @@
         '</div>'+
       '</div>';
   }
-  function statCard(k,v){ return '<div class="kpi-card"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+  function statCard(k,v,kpi){ return '<div class="kpi-card"'+(kpi?' data-kpi="'+kpi+'" role="button" tabindex="0"':'')+'><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+  function scrollToStatsDonut(){
+    var d=document.querySelector("#statsView .stats-donut-card");
+    if(!d) return;
+    d.scrollIntoView({behavior:"smooth",block:"center"});
+    d.style.transition="box-shadow .2s ease";
+    d.style.boxShadow="0 0 0 2px var(--accent)";
+    setTimeout(function(){ d.style.boxShadow=""; },1300);
+  }
+  function goHomeAllBills(){
+    catFilter=null; filter="all";
+    var pb=document.querySelectorAll("#pills .pill");
+    for(var i=0;i<pb.length;i++) pb[i].classList.toggle("active", pb[i].getAttribute("data-filter")==="all");
+    switchView("home");
+    renderList(); renderDueSoon();
+    window.scrollTo(0,0);
+  }
+  function handleStatsKpi(kind){
+    if(kind==="permonth"){ statsLegendYearly=false; renderStats(); scrollToStatsDonut(); }
+    else if(kind==="peryear"){ statsLegendYearly=true; renderStats(); scrollToStatsDonut(); }
+    else if(kind==="count"){ goHomeAllBills(); }
+    else if(kind==="avg"){ statsAvgOpen=!statsAvgOpen; renderStats(); }
+  }
+  (function(){
+    var sv=document.getElementById("statsView");
+    if(!sv) return;
+    sv.addEventListener("click",function(e){
+      var kpi=e.target.closest && e.target.closest(".kpi-card[data-kpi]");
+      if(kpi){ handleStatsKpi(kpi.getAttribute("data-kpi")); return; }
+      var row=e.target.closest && e.target.closest(".sb-row[data-cat]");
+      if(row){
+        catFilter=row.getAttribute("data-cat");
+        filter="all";
+        var pb=document.querySelectorAll("#pills .pill");
+        for(var i=0;i<pb.length;i++) pb[i].classList.toggle("active", pb[i].getAttribute("data-filter")==="all");
+        switchView("home");
+        renderList(); renderDueSoon();
+        window.scrollTo(0,0);
+      }
+    });
+  })();
   function detailRow(k,v){ return '<div class="dt-row"><span class="dt-k">'+k+'</span><span class="dt-v">'+v+'</span></div>'; }
   // ---- View switching ----
   function switchView(view){
@@ -2304,6 +2389,7 @@
       for(var i=0;i<btns.length;i++) btns[i].classList.remove("active");
       e.target.classList.add("active");
       filter=e.target.getAttribute("data-filter");
+      catFilter=null;
       renderList();
       renderDueSoon();
     }
