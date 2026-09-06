@@ -158,6 +158,11 @@
   .cal-day .dnum{font-size:12px;color:var(--muted);font-weight:600}
   .cal-day .dots{display:flex;gap:2px}
   .cal-day .dot{width:6px;height:6px;border-radius:999px;background:var(--accent)}
+  .cal-day.has-bills{cursor:pointer}
+  .cal-day.has-bills:active{border-color:var(--accent);background:var(--surface-2)}
+  .day-sheet-sub{color:var(--muted);font-size:13px;font-weight:600;margin:2px 0 12px}
+  #daySheetList .card{margin-bottom:10px}
+  #daySheetList .card:last-of-type{margin-bottom:2px}
   /* What's left */
   .wl-link{display:block;width:100%;background:none;border:1px dashed var(--line);
     color:var(--muted);font-size:13px;font-weight:600;padding:12px;border-radius:14px;
@@ -853,6 +858,15 @@
     <input class="pl-input" id="paylinkInput" type="url" inputmode="url" placeholder="https://revolut.me/yourname">
     <button class="save" id="paylinkSaveBtn">Save link</button>
     <button class="cancel-toggle" id="paylinkCancelBtn">Cancel</button>
+  </div>
+
+  <!-- Calendar day sheet -->
+  <div class="sheet" id="daySheet">
+    <div class="grab"></div>
+    <h2 id="daySheetTitle">Payments</h2>
+    <div class="day-sheet-sub" id="daySheetSub"></div>
+    <div id="daySheetList"></div>
+    <button class="cancel-toggle" id="daySheetCloseBtn">Close</button>
   </div>
 
   <!-- Add / edit sheet -->
@@ -1885,7 +1899,9 @@
     var isCurrentMonth = (year===today.getFullYear() && month===today.getMonth());
     for(var d=1; d<=daysInMonth; d++){
       var isToday = isCurrentMonth && d===today.getDate();
-      html += '<div class="cal-day'+(isToday?' today':'')+'"><div class="dnum">'+d+'</div>';
+      var hasBills = !!byDay[d];
+      html += '<div class="cal-day'+(isToday?' today':'')+(hasBills?' has-bills':'')+'"'+
+        (hasBills?' data-day="'+d+'"':'')+'><div class="dnum">'+d+'</div>';
       if(byDay[d]){
         html += '<div class="dots">';
         byDay[d].slice(0,4).forEach(function(r){
@@ -1898,6 +1914,13 @@
       html += '</div>';
     }
     grid.innerHTML = html;
+
+    var dayCells = grid.querySelectorAll('.cal-day[data-day]');
+    for(var dc=0; dc<dayCells.length; dc++){
+      dayCells[dc].addEventListener("click", function(){
+        openDaySheet(year, month, parseInt(this.getAttribute("data-day"),10));
+      });
+    }
 
     // legend — only categories actually shown this month
     var legend = document.getElementById("calLegend");
@@ -1946,6 +1969,56 @@
       });
     }
   }
+
+  function openDaySheet(year, month, day){
+    var all = activeRenewalsInMonth(year, month).filter(function(r){ return r.day===day; });
+    all.sort(function(a,b){ return (b.isTrial?0:b.sub.cost) - (a.isTrial?0:a.sub.cost); });
+
+    var wd = new Date(year, month, day).toLocaleDateString(REGION==="uk"?"en-GB":"en-IE",{weekday:"long"});
+    document.getElementById("daySheetTitle").textContent = wd+" "+day+" "+MONTH_NAMES[month];
+
+    var due=0, trials=0;
+    all.forEach(function(r){ if(r.isTrial) trials++; else due += monthlyCost(r.sub); });
+    var payCount = all.length - trials;
+    var parts=[];
+    if(all.length===0) parts.push("Nothing due on this day.");
+    if(payCount>0) parts.push(payCount+(payCount===1?" payment":" payments")+" · "+money(due));
+    if(trials>0) parts.push(trials+(trials===1?" free trial ends":" free trials end"));
+    document.getElementById("daySheetSub").textContent = parts.join("   ·   ");
+
+    var html="";
+    all.forEach(function(r){
+      var s = r.sub;
+      var meta = r.isTrial ? "Free trial ends"
+        : ((CAT_META[s.cat] && CAT_META[s.cat].label) || (s.cat||"").replace(/_/g," "));
+      html += '<div class="card'+(r.isTrial?' trial':'')+'" data-id="'+esc(String(s.id))+'">';
+      html += iconHTML(s);
+      html += '<div class="mid"><div class="name">'+esc(s.name)+'</div>';
+      html += '<div class="meta">'+esc(meta)+'</div></div>';
+      html += '<div class="right"><div class="price">'+money(s.cost)+'</div>'+
+              '<div class="cyc">'+(s.cycle==="yearly"?"/yr":"/mo")+'</div></div>';
+      html += '</div>';
+    });
+    var listEl = document.getElementById("daySheetList");
+    listEl.innerHTML = html;
+    var cards = listEl.querySelectorAll(".card");
+    for(var i=0;i<cards.length;i++){
+      cards[i].addEventListener("click", function(){
+        var id = this.getAttribute("data-id");
+        closeDaySheet();
+        switchView("home");
+        openDetail(id);
+      });
+    }
+
+    document.getElementById("scrim").classList.add("show");
+    document.getElementById("daySheet").classList.add("show");
+  }
+  function closeDaySheet(){
+    document.getElementById("scrim").classList.remove("show");
+    document.getElementById("daySheet").classList.remove("show");
+  }
+  document.getElementById("daySheetCloseBtn").addEventListener("click", closeDaySheet);
 
   document.getElementById("calPrev").addEventListener("click",function(){ calOffset--; renderCalendar(); });
   document.getElementById("calNext").addEventListener("click",function(){ calOffset++; renderCalendar(); });
@@ -2471,7 +2544,7 @@
     document.getElementById("sheet").classList.remove("show");
   }
   document.getElementById("addBtn").addEventListener("click",function(){openSheet(null);});
-  document.getElementById("scrim").addEventListener("click",function(){closeSheet();closeDetail();closeShareSheet();closeSplitSheet();closePaylinkSheet();});
+  document.getElementById("scrim").addEventListener("click",function(){closeSheet();closeDetail();closeShareSheet();closeSplitSheet();closePaylinkSheet();closeDaySheet();});
   document.getElementById("sheetCancelBtn").addEventListener("click", closeSheet);
 
   // ---- Split this bill (calculate shares, send each person their part) ----
