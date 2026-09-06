@@ -459,6 +459,24 @@
     .kpi-card .k{font-size:12px;color:var(--muted);margin-bottom:5px}
     .kpi-card .v{font-size:21px;font-weight:800}
   }
+  .kpi-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .kpi-card .k{font-size:12px;color:var(--muted);margin-bottom:5px}
+  .kpi-card .v{font-size:21px;font-weight:800}
+  #statsView{padding-bottom:40px}
+  .stats-title{font-size:24px;font-weight:800;margin:4px 0 16px}
+  .stats-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+  .stats-main{display:flex;flex-direction:column;gap:14px}
+  .stats-donut-card,.stats-detail-card{padding:16px}
+  .dt-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .dt-row:last-child{border-bottom:none}
+  .dt-k{color:var(--muted)}
+  .dt-v{font-weight:700;text-align:right}
+  @media (min-width:900px){
+    .stats-kpis{grid-template-columns:repeat(4,1fr)}
+    .stats-main{flex-direction:row;align-items:flex-start}
+    .stats-donut-card{flex:0 0 360px}
+    .stats-detail-card{flex:1 1 auto;min-width:0}
+  }
 </style>
 </head>
 <body>
@@ -638,6 +656,7 @@
     </div>
   </div>
 
+  <div id="statsView" style="display:none"></div>
   <div id="calendarView" style="display:none">
     <div class="cal-nav">
       <button id="calPrev">‹</button>
@@ -2011,6 +2030,64 @@
     for(var i=0;i<syms.length;i++) syms[i].textContent = curSym();
   })();
 
+  function renderStats(){
+    var el=document.getElementById("statsView");
+    if(!el) return;
+    var active = subs.filter(function(s){return s.status!=="cancelled";});
+    var m = active.reduce(function(a,s){return a+monthlyCost(s);},0);
+    var byCat={};
+    active.forEach(function(s){ var c=s.cat||"other"; byCat[c]=(byCat[c]||0)+monthlyCost(s); });
+    var rows=[], total=0;
+    Object.keys(byCat).forEach(function(c){ if(byCat[c]>0){ rows.push({cat:c,val:byCat[c]}); total+=byCat[c]; } });
+    rows.sort(function(a,b){return b.val-a.val;});
+    var r=80, C=2*Math.PI*r, offset=0, segs="";
+    rows.forEach(function(row){
+      var meta=CAT_META[row.cat]||{color:"#6b7280"};
+      var seg= total>0?(row.val/total)*C:0;
+      segs+='<circle cx="105" cy="105" r="'+r+'" fill="none" stroke="'+meta.color+'" stroke-width="26" stroke-dasharray="'+seg.toFixed(2)+' '+(C-seg).toFixed(2)+'" stroke-dashoffset="'+(-offset).toFixed(2)+'"></circle>';
+      offset+=seg;
+    });
+    var legend="";
+    rows.forEach(function(row){
+      var meta=CAT_META[row.cat]||{label:row.cat,color:"#6b7280"};
+      var pct= total>0?Math.round((row.val/total)*100):0;
+      legend+='<div class="sb-row"><span class="sb-dot" style="background:'+meta.color+'"></span><span class="sb-name">'+(meta.label||row.cat)+'</span><span class="sb-val">'+money(row.val)+'</span><span class="sb-pct">'+pct+'%</span></div>';
+    });
+    var bills = active.filter(function(s){return !s.trial;});
+    var biggest = active.slice().sort(function(a,b){return monthlyCost(b)-monthlyCost(a);})[0];
+    var avg = active.length? m/active.length : 0;
+    var monthlyCount = active.filter(function(s){return s.cycle!=="yearly";}).length;
+    var yearlyCount = active.filter(function(s){return s.cycle==="yearly";}).length;
+    var due30=0;
+    bills.forEach(function(s){ var d=dueDays(s); if(d>=0 && d<=30) due30+=monthlyCost(s); });
+    var topMeta = rows.length? (CAT_META[rows[0].cat]||{label:rows[0].cat}) : {label:"\u2014"};
+    el.innerHTML =
+      '<div class="stats-title">Your spending</div>'+
+      '<div class="stats-kpis">'+
+        statCard("Per month", money(m))+
+        statCard("Per year", money(m*12))+
+        statCard("Active bills", ""+active.length)+
+        statCard("Average bill", money(avg))+
+      '</div>'+
+      '<div class="stats-main">'+
+        '<div class="card stats-donut-card">'+
+          '<div class="sb-head"><div class="sb-title">Where your money goes</div><div class="sb-pill">'+active.length+' active</div></div>'+
+          '<div class="sb-chart"><svg class="sb-donut" width="200" height="200" viewBox="0 0 210 210"><circle cx="105" cy="105" r="'+r+'" fill="none" stroke="#232327" stroke-width="26"></circle>'+segs+'</svg>'+
+          '<div class="sb-center"><div class="sb-amt">'+money(total)+'</div><div class="sb-yr">'+money(total*12)+' / year</div></div></div>'+
+          '<div class="sb-legend">'+legend+'</div>'+
+        '</div>'+
+        '<div class="card stats-detail-card">'+
+          '<div class="sb-title" style="margin-bottom:12px">The detail</div>'+
+          detailRow("Biggest bill", biggest? esc(biggest.name)+" \u00b7 "+money(monthlyCost(biggest))+"/mo" : "\u2014")+
+          detailRow("Top category", rows.length? (topMeta.label||"\u2014")+" \u00b7 "+money(rows[0].val)+"/mo" : "\u2014")+
+          detailRow("Monthly bills", ""+monthlyCount)+
+          detailRow("Yearly bills", ""+yearlyCount)+
+          detailRow("Due next 30 days", money(due30))+
+        '</div>'+
+      '</div>';
+  }
+  function statCard(k,v){ return '<div class="kpi-card"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>'; }
+  function detailRow(k,v){ return '<div class="dt-row"><span class="dt-k">'+k+'</span><span class="dt-v">'+v+'</span></div>'; }
   // ---- View switching ----
   function switchView(view){
     document.getElementById("homeView").style.display = view==="home" ? "" : "none";
@@ -2018,13 +2095,15 @@
     document.getElementById("leftView").style.display = view==="left" ? "block" : "none";
     document.getElementById("settingsView").style.display = view==="settings" ? "block" : "none";
     var _av=document.getElementById("adminView"); if(_av) _av.style.display = view==="admin" ? "block" : "none";
+    var _sv=document.getElementById("statsView"); if(_sv) _sv.style.display = view==="stats" ? "" : "none";
     if(view==="left") renderWhatsLeft();
     if(view==="admin") loadAdmin();
+    if(view==="stats") renderStats();
     document.getElementById("navHome").classList.toggle("on", view==="home");
     document.getElementById("navCalendar").classList.toggle("on", view==="calendar");
     document.getElementById("navSettings").classList.toggle("on", view==="settings");
     var _na=document.getElementById("navAdmin"); if(_na) _na.classList.toggle("on", view==="admin");
-    var _tnh=document.getElementById("tnHome"); if(_tnh){ _tnh.classList.toggle("on", view==="home"); document.getElementById("tnCal").classList.toggle("on", view==="calendar"); document.getElementById("tnStats").classList.toggle("on", view==="admin"); }
+    var _tnh=document.getElementById("tnHome"); if(_tnh){ _tnh.classList.toggle("on", view==="home"); document.getElementById("tnCal").classList.toggle("on", view==="calendar"); document.getElementById("tnStats").classList.toggle("on", view==="stats"); }
     if(view==="calendar"){
       renderCalendar();
       if(!calendarVisited){ calendarVisited = true; renderChecklist(); }
@@ -2037,7 +2116,7 @@
   if(_navAdmin){ _navAdmin.addEventListener("click",function(){ switchView("admin"); }); }
   var _tnHome=document.getElementById("tnHome"); if(_tnHome) _tnHome.addEventListener("click",function(){ switchView("home"); });
   var _tnCal=document.getElementById("tnCal"); if(_tnCal) _tnCal.addEventListener("click",function(){ switchView("calendar"); });
-  var _tnStats=document.getElementById("tnStats"); if(_tnStats) _tnStats.addEventListener("click",function(){ switchView("admin"); });
+  var _tnStats=document.getElementById("tnStats"); if(_tnStats) _tnStats.addEventListener("click",function(){ switchView("stats"); });
   var _adminRefresh=document.getElementById("adminRefresh");
   if(_adminRefresh){ _adminRefresh.addEventListener("click", loadAdmin); }
   function adminCard(label,val){
