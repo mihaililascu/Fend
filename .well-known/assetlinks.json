@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.getfendapp.twa",
+        "sha256_cert_fingerprints": ["05:A1:0E:1D:85:BA:23:2F:AD:0F:0B:15:44:40:6F:0D:BA:72:C4:22:6D:F0:4D:36:19:BF:63:8B:F6:76:77:AB"]
+      }
+    }]
