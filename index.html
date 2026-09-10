@@ -155,6 +155,12 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;position:relative}
   .cal-day.empty-cell{background:transparent;border:none}
   .cal-day.today{border-color:var(--accent)}
+  .cal-day.has-items{cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .cal-day.has-items:active{transform:scale(.94)}
+  .cal-day.sel{border-color:var(--accent);background:rgba(56,189,248,.14)}
+  .cal-day.sel .dnum{color:var(--text)}
+  .cal-clear{display:none;width:100%;margin:2px 0 12px;padding:9px 12px;background:transparent;
+    border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:13px;font-weight:600}
   .cal-day .dnum{font-size:12px;color:var(--muted);font-weight:600}
   .cal-day .dots{display:flex;gap:2px}
   .cal-day .dot{width:6px;height:6px;border-radius:999px;background:var(--accent)}
@@ -673,6 +679,7 @@
     <div class="cal-grid" id="calGrid"></div>
     <div class="cal-legend" id="calLegend"></div>
     <div class="section-label" id="calListLabel">Payments this month</div>
+    <button class="cal-clear" id="calClear"></button>
     <div id="calList"></div>
   </div>
 
@@ -1835,6 +1842,7 @@
 
   // ---- Calendar ----
   var calOffset = 0; // months from current month
+  var calSelDay = null; // selected day number, or null for whole month
   var DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   var MONTH_NAMES = ["January","February","March","April","May","June","July",
     "August","September","October","November","December"];
@@ -1894,7 +1902,10 @@
     var isCurrentMonth = (year===today.getFullYear() && month===today.getMonth());
     for(var d=1; d<=daysInMonth; d++){
       var isToday = isCurrentMonth && d===today.getDate();
-      html += '<div class="cal-day'+(isToday?' today':'')+'"><div class="dnum">'+d+'</div>';
+      var hasItems = !!byDay[d];
+      html += '<div class="cal-day'+(isToday?' today':'')+
+        (hasItems?' has-items':'')+(calSelDay===d?' sel':'')+
+        '" data-day="'+d+'"><div class="dnum">'+d+'</div>';
       if(byDay[d]){
         html += '<div class="dots">';
         byDay[d].slice(0,4).forEach(function(r){
@@ -1930,6 +1941,14 @@
     }
 
     var listEl = document.getElementById("calList");
+    var clearBtn = document.getElementById("calClear");
+    if(calSelDay!==null){
+      renewals = renewals.filter(function(r){ return r.day===calSelDay; });
+      if(clearBtn){
+        clearBtn.style.display="block";
+        clearBtn.textContent="Showing "+MONTH_NAMES[month]+" "+calSelDay+" — show whole month";
+      }
+    } else if(clearBtn){ clearBtn.style.display="none"; }
     if(renewals.length===0){
       listEl.innerHTML = '<div class="empty"><div class="e-title">Nothing due</div>'+
         '<div class="e-sub">No payments or trial deadlines this month.</div></div>';
@@ -1956,8 +1975,21 @@
     }
   }
 
-  document.getElementById("calPrev").addEventListener("click",function(){ calOffset--; renderCalendar(); });
-  document.getElementById("calNext").addEventListener("click",function(){ calOffset++; renderCalendar(); });
+  document.getElementById("calPrev").addEventListener("click",function(){ calOffset--; calSelDay=null; renderCalendar(); });
+  document.getElementById("calNext").addEventListener("click",function(){ calOffset++; calSelDay=null; renderCalendar(); });
+
+  // Tap a day to see just what's due that day; tap again to clear.
+  document.getElementById("calGrid").addEventListener("click",function(e){
+    var cell = e.target.closest ? e.target.closest(".cal-day") : null;
+    if(!cell || !cell.classList.contains("has-items")) return;
+    var d = parseInt(cell.getAttribute("data-day"),10);
+    if(isNaN(d)) return;
+    calSelDay = (calSelDay===d) ? null : d;
+    renderCalendar();
+  });
+  document.getElementById("calClear").addEventListener("click",function(){
+    calSelDay=null; renderCalendar();
+  });
 
   // ---- What's left ----
   function wlVal(id){ var v = parseFloat(document.getElementById(id).value); return isNaN(v)?0:v; }
