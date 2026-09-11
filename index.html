@@ -812,6 +812,7 @@
     <button class="wl-link" id="dtCancelBtn" style="display:none">How do I cancel this? →</button>
     <button class="wl-link" id="dtOpenBtn">Open service →</button>
     <button class="wl-link" id="dtSplitBtn">Split this bill 👥</button>
+    <button class="wl-link" id="dtMuteBtn"></button>
     <button class="save" id="dtEditBtn">Edit</button>
     <button class="cancel-toggle" id="dtCloseBtn">Close</button>
   </div>
@@ -1028,6 +1029,11 @@
     if(currentUserEmail === ADMIN_EMAIL){
       var na=document.getElementById("navAdmin"); if(na) na.style.display="";
     }
+    // Reflect the saved email-reminder preference (defaults to on).
+    var meta = (session.user && session.user.user_metadata) || {};
+    remindersOn = (meta.reminders_enabled === false) ? false : true;
+    var nsw = document.getElementById("notifSw");
+    if(nsw) nsw.classList.toggle("on", remindersOn);
     loadSubs();
   }
   document.getElementById("logoutRow").addEventListener("click",function(){
@@ -1046,7 +1052,7 @@
   function fromRow(r){
     return {id:r.id,name:r.name,cost:Number(r.cost),cycle:r.cycle,cat:r.category,
       trial:!!r.is_trial,trialEnd:r.trial_end_date,date:r.renewal_date,status:r.status,
-      reference:r.reference||"",reference2:r.reference2||"",reference3:r.reference3||"",contractEnd:r.contract_end||"",created:r.created_at};
+      reference:r.reference||"",reference2:r.reference2||"",reference3:r.reference3||"",contractEnd:r.contract_end||"",muted:!!r.reminders_muted,created:r.created_at};
   }
   function loadSubs(){
     sb.from("subscriptions").select("*").order("renewal_date",{ascending:true}).then(function(res){
@@ -2211,9 +2217,23 @@
   }
 
   // ---- Settings interactions ----
+  var remindersOn = true;
   document.getElementById("notifSw").addEventListener("click",function(){
-    this.classList.toggle("on");
+    var sw = this;
+    if(!currentUserId){ alert("Log in to change your reminder settings."); return; }
+    var next = !remindersOn;
+    // Optimistic flip so the switch feels instant, reverted if the save fails.
+    remindersOn = next;
+    sw.classList.toggle("on", next);
     renderChecklist();
+    sb.auth.updateUser({ data: { reminders_enabled: next } }).then(function(res){
+      if(res && res.error){
+        remindersOn = !next;
+        sw.classList.toggle("on", !next);
+        renderChecklist();
+        alert("Couldn't save that just now — please try again.");
+      }
+    });
   });
   document.getElementById("supportRow").addEventListener("click",function(){
     window.location.href = "mailto:hello@getfendapp.com?subject=Fend support";
@@ -2432,6 +2452,9 @@
     var cancelBtn = document.getElementById("dtCancelBtn");
     cancelBtn.style.display = (s.status==="cancelled" || s.cat==="mortgage") ? "none" : "block";
     document.getElementById("dtOpenBtn").textContent = "Open " + s.name + " →";
+    var muteBtn = document.getElementById("dtMuteBtn");
+    muteBtn.textContent = s.muted ? "🔕 Reminders paused — turn back on" : "🔔 Pause reminders for this bill";
+    muteBtn.style.opacity = s.muted ? ".7" : "1";
 
     document.getElementById("scrim").classList.add("show");
     document.getElementById("detailSheet").classList.add("show");
@@ -2440,6 +2463,19 @@
     document.getElementById("scrim").classList.remove("show");
     document.getElementById("detailSheet").classList.remove("show");
   }
+  document.getElementById("dtMuteBtn").addEventListener("click",function(){
+    var s = subs.filter(function(x){return x.id===detailId;})[0];
+    if(!s) return;
+    s.muted = !s.muted;
+    var btn = this;
+    btn.textContent = s.muted ? "🔕 Reminders paused — turn back on" : "🔔 Pause reminders for this bill";
+    btn.style.opacity = s.muted ? ".7" : "1";
+    if(sb && currentUserId){
+      sb.from("subscriptions").update({reminders_muted:s.muted}).eq("id",s.id)
+        .then(function(res){ if(res && res.error) console.warn("mute save failed", res.error); });
+    }
+    render();
+  });
   document.getElementById("dtCloseBtn").addEventListener("click",closeDetail);
   document.getElementById("dtEditBtn").addEventListener("click",function(){
     var id = detailId; closeDetail(); openSheet(id);
